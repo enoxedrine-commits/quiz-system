@@ -51,19 +51,23 @@ export default function LiveDisplay() {
     }
   }, [scoresData]);
 
-  // Set current question
+  // Set current question when quiz is in progress
   useEffect(() => {
     if (
       session &&
       questions.length > 0 &&
+      session.status === "in_progress" &&
       session.currentQuestionIndex >= 0 &&
       session.currentQuestionIndex < questions.length
     ) {
       setCurrentQuestion(questions[session.currentQuestionIndex]);
       setShowAnswer(false);
       setTimeLeft(30);
+    } else if (session?.status === "completed") {
+      // Clear current question when quiz is completed
+      setCurrentQuestion(null);
     }
-  }, [session?.currentQuestionIndex, questions]);
+  }, [session?.currentQuestionIndex, session?.status, questions]);
 
   // Countdown timer
   useEffect(() => {
@@ -111,8 +115,38 @@ export default function LiveDisplay() {
         </div>
       </div>
 
-      {/* Question Display */}
-      {currentQuestion ? (
+      {/* Main Content - Check status first */}
+      {session.status === "completed" ? (
+        // Quiz Complete Screen
+        <div className="memphis-card max-w-2xl mx-auto text-center py-12">
+          <h1 className="text-5xl font-bold uppercase memphis-shadow mb-4">
+            🎉 Quiz Complete!
+          </h1>
+          <div className="text-2xl font-bold mb-8">
+            {group1Score > group2Score
+              ? `🏆 ${session.groupOneName} wins!`
+              : group2Score > group1Score
+              ? `🏆 ${session.groupTwoName} wins!`
+              : "🤝 It's a tie!"}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="font-bold">{session.groupOneName}</p>
+              <p className="text-4xl font-bold text-[#FF6B9D]">{group1Score}</p>
+            </div>
+            <div>
+              <p className="font-bold">{session.groupTwoName}</p>
+              <p className="text-4xl font-bold text-[#A8E6CF]">{group2Score}</p>
+            </div>
+          </div>
+        </div>
+      ) : session.status === "setup" ? (
+        // Waiting for Quiz to Start
+        <div className="memphis-card max-w-2xl mx-auto text-center py-12">
+          <p className="text-2xl font-bold">⏳ Waiting for quiz to start...</p>
+        </div>
+      ) : currentQuestion ? (
+        // Question Display
         <div className="max-w-4xl mx-auto">
           {/* Question */}
           <div className="memphis-card mb-8">
@@ -172,32 +206,10 @@ export default function LiveDisplay() {
             )}
           </div>
         </div>
-      ) : session.status === "completed" ? (
-        <div className="memphis-card max-w-2xl mx-auto text-center py-12">
-          <h1 className="text-5xl font-bold uppercase memphis-shadow mb-4">
-            Quiz Complete!
-          </h1>
-          <div className="text-2xl font-bold mb-8">
-            {group1Score > group2Score
-              ? `${session.groupOneName} wins!`
-              : group2Score > group1Score
-              ? `${session.groupTwoName} wins!`
-              : "It's a tie!"}
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="font-bold">{session.groupOneName}</p>
-              <p className="text-4xl font-bold text-[#FF6B9D]">{group1Score}</p>
-            </div>
-            <div>
-              <p className="font-bold">{session.groupTwoName}</p>
-              <p className="text-4xl font-bold text-[#A8E6CF]">{group2Score}</p>
-            </div>
-          </div>
-        </div>
       ) : (
+        // Loading or No Question
         <div className="memphis-card max-w-2xl mx-auto text-center py-12">
-          <p className="text-2xl font-bold">Waiting for quiz to start...</p>
+          <p className="text-2xl font-bold">Loading question...</p>
         </div>
       )}
     </div>

@@ -34,9 +34,11 @@ export default function GroupSetup() {
       });
 
       toast.success("Quiz started!");
-      setLocation(`/quiz/${result.sessionId}`);
+      // Redirect to host panel to control the quiz
+      setLocation(`/host/${result.sessionId}`);
     } catch (error) {
       toast.error("Failed to start quiz");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
