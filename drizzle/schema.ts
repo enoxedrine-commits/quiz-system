@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -25,4 +25,88 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Quiz questions table
+ * Stores all quiz questions with multiple choice answers
+ */
+export const quizQuestions = mysqlTable("quiz_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  questionText: text("questionText").notNull(),
+  answerA: text("answerA").notNull(),
+  answerB: text("answerB").notNull(),
+  answerC: text("answerC").notNull(),
+  answerD: text("answerD").notNull(),
+  correctAnswer: mysqlEnum("correctAnswer", ["A", "B", "C", "D"]).notNull(),
+  points: int("points").notNull().default(10),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type QuizQuestion = typeof quizQuestions.$inferSelect;
+export type InsertQuizQuestion = typeof quizQuestions.$inferInsert;
+
+/**
+ * Quiz sessions table
+ * Represents a single quiz event with two competing groups
+ */
+export const quizSessions = mysqlTable("quiz_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  groupOneName: varchar("groupOneName", { length: 255 }).notNull(),
+  groupTwoName: varchar("groupTwoName", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["setup", "in_progress", "completed"]).default("setup").notNull(),
+  currentQuestionIndex: int("currentQuestionIndex").default(-1).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type QuizSession = typeof quizSessions.$inferSelect;
+export type InsertQuizSession = typeof quizSessions.$inferInsert;
+
+/**
+ * Quiz session questions table
+ * Links questions to a specific quiz session and tracks their order
+ */
+export const quizSessionQuestions = mysqlTable("quiz_session_questions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("sessionId").notNull(),
+  questionId: int("questionId").notNull(),
+  questionOrder: int("questionOrder").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type QuizSessionQuestion = typeof quizSessionQuestions.$inferSelect;
+export type InsertQuizSessionQuestion = typeof quizSessionQuestions.$inferInsert;
+
+/**
+ * Scores table
+ * Tracks cumulative points for each group in a quiz session
+ */
+export const scores = mysqlTable("scores", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("sessionId").notNull(),
+  groupNumber: mysqlEnum("groupNumber", ["1", "2"]).notNull(),
+  totalPoints: int("totalPoints").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Score = typeof scores.$inferSelect;
+export type InsertScore = typeof scores.$inferInsert;
+
+/**
+ * Question responses table
+ * Tracks which group answered each question correctly
+ */
+export const questionResponses = mysqlTable("question_responses", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: int("sessionId").notNull(),
+  questionId: int("questionId").notNull(),
+  groupNumber: mysqlEnum("groupNumber", ["1", "2"]).notNull(),
+  pointsAwarded: int("pointsAwarded").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type QuestionResponse = typeof questionResponses.$inferSelect;
+export type InsertQuestionResponse = typeof questionResponses.$inferInsert;

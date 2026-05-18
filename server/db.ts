@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, quizQuestions, InsertQuizQuestion, quizSessions, InsertQuizSession, quizSessionQuestions, InsertQuizSessionQuestion, scores, InsertScore, questionResponses, InsertQuestionResponse } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,121 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Quiz-related queries
+export async function createQuestion(data: InsertQuizQuestion) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(quizQuestions).values(data);
+  return result;
+}
+
+export async function getQuestions() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.select().from(quizQuestions);
+  return result;
+}
+
+export async function getQuestionById(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.select().from(quizQuestions).where(eq(quizQuestions.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateQuestion(id: number, data: Partial<InsertQuizQuestion>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(quizQuestions).set(data).where(eq(quizQuestions.id, id));
+}
+
+export async function deleteQuestion(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.delete(quizQuestions).where(eq(quizQuestions.id, id));
+}
+
+export async function createQuizSession(data: InsertQuizSession) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(quizSessions).values(data);
+  return result;
+}
+
+export async function getQuizSession(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.select().from(quizSessions).where(eq(quizSessions.id, id)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+export async function updateQuizSession(id: number, data: Partial<InsertQuizSession>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(quizSessions).set(data).where(eq(quizSessions.id, id));
+}
+
+export async function addQuestionToSession(data: InsertQuizSessionQuestion) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(quizSessionQuestions).values(data);
+}
+
+export async function getSessionQuestions(sessionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.select().from(quizSessionQuestions).where(eq(quizSessionQuestions.sessionId, sessionId));
+  return result;
+}
+
+export async function getSessionScores(sessionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.select().from(scores).where(eq(scores.sessionId, sessionId));
+  return result;
+}
+
+export async function initializeSessionScores(sessionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(scores).values([
+    { sessionId, groupNumber: "1", totalPoints: 0 },
+    { sessionId, groupNumber: "2", totalPoints: 0 },
+  ]);
+}
+
+export async function updateScore(sessionId: number, groupNumber: "1" | "2", points: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const score = await db.select().from(scores)
+    .where(and(eq(scores.sessionId, sessionId), eq(scores.groupNumber, groupNumber)))
+    .limit(1);
+  
+  if (score.length > 0) {
+    await db.update(scores)
+      .set({ totalPoints: score[0].totalPoints + points })
+      .where(and(eq(scores.sessionId, sessionId), eq(scores.groupNumber, groupNumber)));
+  }
+}
+
+export async function recordQuestionResponse(data: InsertQuestionResponse) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.insert(questionResponses).values(data);
+}
+
+// TODO: add more feature queries here as your schema grows.

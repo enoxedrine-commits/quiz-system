@@ -43,74 +43,83 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --radius: 0.65rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.235 0.015 65);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.235 0.015 65);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.235 0.015 65);
-  --secondary: oklch(0.98 0.001 286.375);
-  --secondary-foreground: oklch(0.4 0.015 65);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.141 0.005 285.823);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.235 0.015 65);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.623 0.214 259.815);
+  /* Memphis Design System - Vibrant & Playful */
+  
+  /* Primary Colors */
+  --primary: #FF6B9D; /* Vibrant Pink */
+  --primary-foreground: #FFFFFF;
+  
+  /* Memphis Palette */
+  --memphis-peach: #FFF0E6; /* Soft peach background */
+  --memphis-mint: #A8E6CF; /* Pastel mint */
+  --memphis-lilac: #D4A5E6; /* Pastel lilac */
+  --memphis-yellow: #FFE66D; /* Pastel yellow */
+  --memphis-black: #1A1A1A; /* Deep black for accents */
+  
+  /* Semantic Colors for Memphis */
+  --radius: 1.2rem; /* Rounded for playful feel */
+  --background: #FFF0E6; /* Soft peach */
+  --foreground: #1A1A1A; /* Deep black */
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --secondary: #A8E6CF; /* Mint */
+  --secondary-foreground: #1A1A1A;
+  --muted: #D4A5E6; /* Lilac */
+  --muted-foreground: #1A1A1A;
+  --accent: #FFE66D; /* Yellow */
+  --accent-foreground: #1A1A1A;
+  --destructive: #FF6B6B; /* Vibrant red */
+  --destructive-foreground: #FFFFFF;
+  --border: #E0D5D0; /* Soft border */
+  --input: #FFFFFF;
+  --ring: #FF6B9D; /* Pink ring */
+  
+  /* Chart colors - Memphis palette */
+  --chart-1: #FF6B9D; /* Pink */
+  --chart-2: #A8E6CF; /* Mint */
+  --chart-3: #D4A5E6; /* Lilac */
+  --chart-4: #FFE66D; /* Yellow */
+  --chart-5: #FF9F43; /* Orange */
+  
+  /* Sidebar */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #FF6B9D;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #A8E6CF;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #E0D5D0;
+  --sidebar-ring: #FF6B9D;
 }
 
 .dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.85 0.005 65);
-  --card: oklch(0.21 0.006 285.885);
-  --card-foreground: oklch(0.85 0.005 65);
-  --popover: oklch(0.21 0.006 285.885);
-  --popover-foreground: oklch(0.85 0.005 65);
-  --secondary: oklch(0.24 0.006 286.033);
-  --secondary-foreground: oklch(0.7 0.005 65);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground:  oklch(0.92 0.005 65);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.488 0.243 264.376);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.85 0.005 65);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground:  oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.488 0.243 264.376);
+  --background: #1A1A1A;
+  --foreground: #FFFFFF;
+  --card: #2A2A2A;
+  --card-foreground: #FFFFFF;
+  --popover: #2A2A2A;
+  --popover-foreground: #FFFFFF;
+  --secondary: #A8E6CF;
+  --secondary-foreground: #1A1A1A;
+  --muted: #D4A5E6;
+  --muted-foreground: #FFFFFF;
+  --accent: #FFE66D;
+  --accent-foreground: #1A1A1A;
+  --destructive: #FF6B6B;
+  --destructive-foreground: #FFFFFF;
+  --border: #404040;
+  --input: #2A2A2A;
+  --ring: #FF6B9D;
+  --sidebar: #2A2A2A;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #FF6B9D;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #A8E6CF;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #404040;
+  --sidebar-ring: #FF6B9D;
 }
 
 @layer base {
@@ -119,6 +128,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
@@ -131,27 +141,87 @@
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+  
+  /* Memphis Typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold uppercase tracking-wider;
+    text-shadow: 2px 2px 0px rgba(26, 26, 26, 0.1);
+  }
+  
+  h1 {
+    @apply text-4xl md:text-5xl;
+  }
+  
+  h2 {
+    @apply text-3xl md:text-4xl;
+  }
+  
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
 }
 
 @layer components {
-  /**
-   * Custom container utility that centers content and adds responsive padding.
-   *
-   * This overrides Tailwind's default container behavior to:
-   * - Auto-center content (mx-auto)
-   * - Add responsive horizontal padding
-   * - Set max-width for large screens
-   *
-   * Usage: <div className="container">...</div>
-   *
-   * For custom widths, use max-w-* utilities directly:
-   * <div className="max-w-6xl mx-auto px-4">...</div>
-   */
+  /* Memphis Geometric Primitives */
+  .memphis-circle {
+    @apply rounded-full;
+  }
+  
+  .memphis-triangle {
+    width: 0;
+    height: 0;
+    border-left: 1rem solid transparent;
+    border-right: 1rem solid transparent;
+    border-bottom: 2rem solid currentColor;
+  }
+  
+  .memphis-dot {
+    @apply rounded-full;
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+  
+  .memphis-diamond {
+    width: 1rem;
+    height: 1rem;
+    transform: rotate(45deg);
+  }
+  
+  /* Memphis Accent Line */
+  .memphis-accent-line {
+    @apply h-1 bg-black;
+    width: 100%;
+  }
+  
+  /* Memphis Button Style */
+  .memphis-btn {
+    @apply px-6 py-3 font-bold uppercase rounded-xl transition-all duration-200;
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.1);
+    box-shadow: 4px 4px 0px rgba(26, 26, 26, 0.15);
+  }
+  
+  .memphis-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px rgba(26, 26, 26, 0.2);
+  }
+  
+  .memphis-btn:active {
+    transform: translate(0, 0);
+    box-shadow: 2px 2px 0px rgba(26, 26, 26, 0.1);
+  }
+  
+  /* Memphis Card */
+  .memphis-card {
+    @apply bg-white rounded-2xl p-6 border-2 border-black;
+    box-shadow: 6px 6px 0px rgba(26, 26, 26, 0.1);
+  }
+  
+  /* Custom container utility */
   .container {
     width: 100%;
     margin-left: auto;
     margin-right: auto;
-    padding-left: 1rem; /* 16px - mobile padding */
+    padding-left: 1rem;
     padding-right: 1rem;
   }
 
@@ -162,16 +232,43 @@
 
   @media (min-width: 640px) {
     .container {
-      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-left: 1.5rem;
       padding-right: 1.5rem;
     }
   }
 
   @media (min-width: 1024px) {
     .container {
-      padding-left: 2rem; /* 32px - desktop padding */
+      padding-left: 2rem;
       padding-right: 2rem;
-      max-width: 1280px; /* Standard content width */
+      max-width: 1280px;
     }
+  }
+}
+
+/* Memphis Background Pattern */
+@layer utilities {
+  .memphis-bg {
+    @apply bg-[#FFF0E6] relative overflow-hidden;
+  }
+  
+  .memphis-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(168, 230, 207, 0.1) 2%, transparent 2%),
+      radial-gradient(circle at 80% 80%, rgba(212, 165, 230, 0.1) 3%, transparent 3%),
+      radial-gradient(circle at 40% 40%, rgba(255, 230, 109, 0.08) 2%, transparent 2%),
+      radial-gradient(circle at 90% 10%, rgba(255, 107, 157, 0.08) 2%, transparent 2%);
+    background-size: 200% 200%, 300% 300%, 250% 250%, 280% 280%;
+    pointer-events: none;
+  }
+  
+  .memphis-shadow {
+    text-shadow: 3px 3px 0px rgba(26, 26, 26, 0.15);
   }
 }
