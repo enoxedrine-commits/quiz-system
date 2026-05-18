@@ -1,0 +1,43 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://33EkR5Cdn7ykxuR.root:Vo4Z3R6GNEwz4U42ErjO@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/DABR5djbMasyWadjW7KpFu?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663281338745/DABR5djbMasyWadjW7KpFu",
+    "access_key_id": "ASIAZV3A2ECZFT3AW5D6",
+    "secret_access_key": "4cHaLmtHIiqo0Kp0NBJi/eQff/YuxC/qg4fgslKl",
+    "session_token": "IQoJb3JpZ2luX2VjEPP//////////wEaCXVzLWVhc3QtMSJGMEQCICowfL9eFAIAgLVUAWFx7wwAZ5TsThEH1HrWFU5S0X+nAiAXKJXt8LvO8gDnKLmsw706l9GLir7PmUvZrcAwBF9fFSr/Awi7//////////8BEAQaDDY2NTM4NjA5ODg2NiIMJzLavmU02wTgBoGAKtMDhnOVr5geGWHS9gljP743JwCNCbTEv52zFidffdEZRGDXovBSLXH3BfJetJMHGnpckGfkbPSjaKFdHE2i9PAVSkJCFS+rMV6cIqF5g3GtCprc+gBbX9+1JCybJvLc4hhbuYUjXmfqcg6UwurIQ5n78IsDF0lFkcOC8DjMz1ptg9cYP9RAO6ZqH14jWB25IMLoVO4l6TKPnLeGgijKVOkICxqK1ga4vW3KpLoq6+qJUhjM2u1HbVssSLI2/FBG6mbLhm4y8NwX9SjPAjHul7bMyHDkEeXdynyoCUX9sqeuURfcZwNe0Wqp7D49inX8NQL7+r5NySDv5It0jhXNe+4c4p6+befrZo8TRlTr05abdbwyR30ClC2DhYeh+P/VObe0KsTv7TDDMoVMYLJprSKnBkyZWC1WGTY/UD7jlDJKjANmAusk3ABN+GmA2z98BbQrCVIkOSteZEzW22YkmvBPbjdHYeMSoducHz5GNMTq8Pj2wflNinmrH2kUIxAkAs87o8/tCXsAt4ZID+1XOLosQZEEkwMAoZOn7VTGE0DmMitNlmpCj/cbyFNwlDwXYV6jW8KgHpu7+rxAEtqn8rGtaDKmuO9wd1aHOyBih+HCsjlBFmkwsM6r0AY6ngFtKXiPSI92e3rFLidK5B9JetzINO9XVF3l0sF+yypm5dGNWm5KsFugz75iu7SXeo+znLf8vs+/TGhvWCH6nm25ugo1bU31BqnxlDw1Hpy7ONxY8Ea2DoX22OIkfxeevqwbHc8WZYYzRHFEkmIS0ho5+HO6zrran6UAxt+RsrOEMd83NO/jAyHCx7qgaKeMLvyxIEieEmIf+kKZMqhiGg==",
+    "expiration": "2026-05-18T22:17:20.000Z"
+  },
+  "name": "quiz-system",
+  "path": "/home/ubuntu/quiz-system",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "5YSjSMjwv2u7xUHRPEEn6w",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "Ho56GqvJXmLsZoCzpZS2YY",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "Edrine Enox",
+    "OWNER_OPEN_ID": "35XnaRFRgBXRjb9mdaeJgY",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "5ec8985e-76a1-4313-95f7-9b418c106402",
+    "VITE_APP_ID": "DABR5djbMasyWadjW7KpFu",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "Public Quiz System",
+    "VITE_FRONTEND_FORGE_API_KEY": "Lu5N8tCQvJWQ9WCqGo4w6A",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}
