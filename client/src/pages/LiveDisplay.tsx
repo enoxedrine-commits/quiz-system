@@ -113,15 +113,15 @@ export default function LiveDisplay() {
   return (
     <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6 lg:p-8">
       {/* Scoreboard */}
-      <div className="mx-auto mb-6 grid max-w-2xl grid-cols-1 gap-4 sm:mb-8 sm:grid-cols-2 sm:gap-6">
-        <div className="memphis-card text-center">
-          <h2 className="mb-2 break-words text-lg font-bold uppercase sm:text-xl">{session.groupOneName}</h2>
-          <div className="text-4xl font-bold text-[#FF6B9D] sm:text-5xl lg:text-6xl">{group1Score}</div>
+      <div className="mx-auto mb-5 grid max-w-2xl grid-cols-2 gap-3 sm:mb-8 sm:gap-6">
+        <div className="memphis-card p-3 text-center sm:p-6">
+          <h2 className="mb-2 break-words text-sm font-bold uppercase sm:text-xl">{session.groupOneName}</h2>
+          <div className="text-3xl font-bold text-[#FF6B9D] sm:text-5xl lg:text-6xl">{group1Score}</div>
           <p className="text-sm text-gray-600 mt-2">Points</p>
         </div>
-        <div className="memphis-card text-center">
-          <h2 className="mb-2 break-words text-lg font-bold uppercase sm:text-xl">{session.groupTwoName}</h2>
-          <div className="text-4xl font-bold text-[#A8E6CF] sm:text-5xl lg:text-6xl">{group2Score}</div>
+        <div className="memphis-card p-3 text-center sm:p-6">
+          <h2 className="mb-2 break-words text-sm font-bold uppercase sm:text-xl">{session.groupTwoName}</h2>
+          <div className="text-3xl font-bold text-[#A8E6CF] sm:text-5xl lg:text-6xl">{group2Score}</div>
           <p className="text-sm text-gray-600 mt-2">Points</p>
         </div>
       </div>
@@ -160,12 +160,12 @@ export default function LiveDisplay() {
         // Question Display
         <div className="max-w-4xl mx-auto">
           {/* Question */}
-          <div className="memphis-card mb-8">
-            <div className="text-center mb-6">
+          <div className="memphis-card mb-8 p-4 sm:p-6">
+            <div className="text-center mb-5 sm:mb-6">
               <p className="text-sm text-gray-600 font-bold mb-2">
                 Question {session.currentQuestionIndex + 1} of {questions.length}
               </p>
-              <h1 className="break-words text-2xl font-bold uppercase memphis-shadow sm:text-4xl md:text-5xl">
+              <h1 className="break-words text-xl font-bold uppercase memphis-shadow sm:text-3xl md:text-4xl">
                 {currentQuestion.questionText}
               </h1>
             </div>
@@ -191,17 +191,17 @@ export default function LiveDisplay() {
                   {timeLeft}
                 </div>
                 {session.questionPassed && (
-                  <p className="mt-3 text-sm font-bold uppercase text-blue-600">
+                  <p className="mx-auto mt-3 max-w-56 text-center text-sm font-bold uppercase text-blue-600">
                     Question has been passed
                   </p>
                 )}
                 {!session.timerStarted && !session.answerRevealed && !session.questionPassed && (
-                  <p className="mt-3 text-sm font-bold uppercase text-gray-600">
+                  <p className="mx-auto mt-3 max-w-56 text-center text-sm font-bold uppercase text-gray-600">
                     Waiting for host to start timer
                   </p>
                 )}
                 {session.timerStarted && timeLeft === 0 && !session.answerRevealed && !session.questionPassed && (
-                  <p className="mt-3 text-sm font-bold uppercase text-gray-600">
+                  <p className="mx-auto mt-3 max-w-56 text-center text-sm font-bold uppercase text-gray-600">
                     Waiting for host to show answer
                   </p>
                 )}
@@ -209,7 +209,7 @@ export default function LiveDisplay() {
             </div>
 
             {/* Answers */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {["A", "B", "C", "D"].map((letter) => {
                 const answerText =
                   currentQuestion[`answer${letter}` as keyof Question];
@@ -220,13 +220,13 @@ export default function LiveDisplay() {
                 return (
                   <div
                     key={letter}
-                    className={`break-words rounded-xl border-4 p-4 text-base font-bold uppercase transition-all sm:p-6 sm:text-lg ${
+                    className={`break-words rounded-xl border-4 p-3 text-sm font-bold uppercase transition-all sm:p-6 sm:text-lg ${
                       shouldHighlight
                         ? "bg-green-300 border-green-600 scale-105 shadow-lg"
                         : "bg-white border-black"
                     }`}
                   >
-                    <span className="font-black text-xl sm:text-2xl">{letter}.</span>{" "}
+                    <span className="font-black text-lg sm:text-2xl">{letter}.</span>{" "}
                     {answerText}
                   </div>
                 );

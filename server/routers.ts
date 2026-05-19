@@ -352,6 +352,20 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    adjustPoints: protectedProcedure
+      .input(
+        z.object({
+          sessionId: z.number(),
+          groupNumber: z.enum(["1", "2"]),
+          points: z.number().int(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.updateScore(input.sessionId, input.groupNumber, input.points);
+
+        return { success: true };
+      }),
+
     getScores: protectedProcedure
       .input(z.object({ sessionId: z.number() }))
       .query(async ({ input }) => {

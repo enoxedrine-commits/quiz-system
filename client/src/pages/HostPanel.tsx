@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CheckCircle, Clock, Copy, Play, SkipForward, Square } from "lucide-react";
@@ -31,8 +32,10 @@ export default function HostPanel() {
   const sessionId = params?.sessionId ? parseInt(params.sessionId) : 0;
 
   const [showPointDialog, setShowPointDialog] = useState(false);
+  const [showAdjustDialog, setShowAdjustDialog] = useState(false);
   const [awardMode, setAwardMode] = useState<AwardMode>("normal");
   const [selectedGroup, setSelectedGroup] = useState<"1" | "2" | null>(null);
+  const [adjustPoints, setAdjustPoints] = useState(1);
   const [liveUrl, setLiveUrl] = useState("");
 
   const { data: session, refetch: refetchSession } = trpc.session.get.useQuery(
@@ -45,7 +48,7 @@ export default function HostPanel() {
     { enabled: !!sessionId }
   );
 
-  const { data: scores = [] } = trpc.scoring.getScores.useQuery(
+  const { data: scores = [], refetch: refetchScores } = trpc.scoring.getScores.useQuery(
     { sessionId },
     { enabled: !!sessionId, refetchInterval: 1000 }
   );
@@ -58,6 +61,7 @@ export default function HostPanel() {
   const nextMutation = trpc.session.nextQuestion.useMutation();
   const endMutation = trpc.session.end.useMutation();
   const awardPointsMutation = trpc.scoring.awardPoints.useMutation();
+  const adjustPointsMutation = trpc.scoring.adjustPoints.useMutation();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -174,6 +178,24 @@ export default function HostPanel() {
     }
   };
 
+  const handleAdjustPoints = async (groupNumber: "1" | "2", direction: 1 | -1) => {
+    const points = Math.max(1, adjustPoints) * direction;
+
+    try {
+      await adjustPointsMutation.mutateAsync({
+        sessionId,
+        groupNumber,
+        points,
+      });
+      await refetchSession();
+      await refetchScores();
+      setShowAdjustDialog(false);
+      toast.success(points > 0 ? "Points added!" : "Points subtracted!");
+    } catch (error) {
+      toast.error("Failed to adjust points");
+    }
+  };
+
   const copyToClipboard = () => {
     navigator.clipboard.writeText(liveUrl);
     toast.success("Live URL copied!");
@@ -239,6 +261,20 @@ export default function HostPanel() {
             <p className="mb-2 break-words text-sm font-bold">{session.groupTwoName}</p>
             <p className="text-3xl font-bold text-[#A8E6CF] sm:text-4xl">{group2Score}</p>
           </div>
+        </div>
+
+        <div className="memphis-card mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-xl font-bold uppercase sm:text-2xl">
+              Score Adjustment
+            </h2>
+          </div>
+          <Button
+            onClick={() => setShowAdjustDialog(true)}
+            className="memphis-btn bg-[#D4A5E6] text-black"
+          >
+            Adjust Score
+          </Button>
         </div>
 
         {/* Quiz Controls or Completion Screen */}
@@ -431,6 +467,71 @@ export default function HostPanel() {
 
             <Button
               onClick={() => setShowPointDialog(false)}
+              variant="outline"
+              className="w-full border-2 border-black"
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manual Point Adjustment Dialog */}
+      <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold uppercase">
+              Adjust Score
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-2 block text-sm font-bold uppercase">
+                Points
+              </label>
+              <Input
+                type="number"
+                min="1"
+                value={adjustPoints}
+                onChange={(e) =>
+                  setAdjustPoints(Math.max(1, parseInt(e.target.value, 10) || 1))
+                }
+                className="border-2 border-black text-lg font-bold"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Button
+                onClick={() => handleAdjustPoints("1", 1)}
+                className="memphis-btn bg-[#FF6B9D] text-white"
+              >
+                Add to {session.groupOneName}
+              </Button>
+              <Button
+                onClick={() => handleAdjustPoints("1", -1)}
+                variant="outline"
+                className="border-2 border-black font-bold"
+              >
+                Subtract from {session.groupOneName}
+              </Button>
+              <Button
+                onClick={() => handleAdjustPoints("2", 1)}
+                className="memphis-btn bg-[#A8E6CF] text-black"
+              >
+                Add to {session.groupTwoName}
+              </Button>
+              <Button
+                onClick={() => handleAdjustPoints("2", -1)}
+                variant="outline"
+                className="border-2 border-black font-bold"
+              >
+                Subtract from {session.groupTwoName}
+              </Button>
+            </div>
+
+            <Button
+              onClick={() => setShowAdjustDialog(false)}
               variant="outline"
               className="w-full border-2 border-black"
             >
