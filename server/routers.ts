@@ -10,6 +10,10 @@ const PASSED_QUESTION_POINTS_KEY = "passedQuestionPoints";
 const DEFAULT_PASSED_QUESTION_POINTS = 5;
 const QUESTION_TYPES = ["multiple_choice", "single_answer"] as const;
 const ANSWER_OPTIONS = ["A", "B", "C", "D"] as const;
+const pointsSchema = z.coerce
+  .number()
+  .int("Points must be a whole number")
+  .min(1, "Points must be at least 1");
 
 const questionInputSchema = z
   .object({
@@ -21,7 +25,7 @@ const questionInputSchema = z
     answerC: z.string().optional().default(""),
     answerD: z.string().optional().default(""),
     correctAnswer: z.enum(ANSWER_OPTIONS).optional().default("A"),
-    points: z.number().int().min(1, "Points must be at least 1"),
+    points: pointsSchema,
   })
   .superRefine((question, ctx) => {
     if (question.questionType !== "multiple_choice") return;
@@ -46,7 +50,7 @@ const questionUpdateSchema = z.object({
   answerC: z.string().optional(),
   answerD: z.string().optional(),
   correctAnswer: z.enum(ANSWER_OPTIONS).optional(),
-  points: z.number().int().optional(),
+  points: pointsSchema.optional(),
 });
 
 function normalizeQuestionInput(question: z.infer<typeof questionInputSchema>) {
