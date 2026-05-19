@@ -1,5 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
+import { AUTH_BYPASS_ENABLED, createAuthBypassUser } from "./authBypass";
 import { sdk } from "./sdk";
 
 export type TrpcContext = {
@@ -11,6 +12,14 @@ export type TrpcContext = {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
+  if (AUTH_BYPASS_ENABLED) {
+    return {
+      req: opts.req,
+      res: opts.res,
+      user: createAuthBypassUser(),
+    };
+  }
+
   let user: User | null = null;
 
   try {
