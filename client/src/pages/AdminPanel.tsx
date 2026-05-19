@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Edit2, Plus } from "lucide-react";
+import { Trash2, Edit2, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 type Question = {
   id?: number;
+  bankId?: number | null;
   questionText?: string;
   answerA?: string;
   answerB?: string;
@@ -19,9 +21,133 @@ type Question = {
   points?: number;
 };
 
+const requiredCsvHeaders = [
+  "question",
+  "optionA",
+  "optionB",
+  "optionC",
+  "optionD",
+  "answer",
+  "points",
+] as const;
+
+type CsvHeader = (typeof requiredCsvHeaders)[number];
+
+function parseCsvRows(csvText: string) {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i];
+    const nextChar = csvText[i + 1];
+
+    if (char === '"' && inQuotes && nextChar === '"') {
+      cell += '"';
+      i++;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      row.push(cell.trim());
+      cell = "";
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && nextChar === "\n") {
+        i++;
+      }
+      row.push(cell.trim());
+      if (row.some((value) => value.length > 0)) {
+        rows.push(row);
+      }
+      row = [];
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+
+  row.push(cell.trim());
+  if (row.some((value) => value.length > 0)) {
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+function normalizeAnswer(answer: string): "A" | "B" | "C" | "D" | null {
+  const normalized = answer.trim().toUpperCase().replace(/^OPTION\s*/, "");
+  return ["A", "B", "C", "D"].includes(normalized)
+    ? (normalized as "A" | "B" | "C" | "D")
+    : null;
+}
+
+function parseQuestionsCsv(csvText: string) {
+  const rows = parseCsvRows(csvText);
+  if (rows.length < 2) {
+    throw new Error("CSV must include a header row and at least one question row");
+  }
+
+  const headers = rows[0].map((header) => header.trim());
+  const headerIndexes = requiredCsvHeaders.reduce<Record<CsvHeader, number>>(
+    (indexes, header) => {
+      indexes[header] = headers.indexOf(header);
+      return indexes;
+    },
+    {} as Record<CsvHeader, number>
+  );
+
+  const missingHeaders = requiredCsvHeaders.filter(
+    (header) => headerIndexes[header] === -1
+  );
+
+  if (missingHeaders.length > 0) {
+    throw new Error(`Missing CSV columns: ${missingHeaders.join(", ")}`);
+  }
+
+  return rows.slice(1).map((row, index) => {
+    const rowNumber = index + 2;
+    const getValue = (header: CsvHeader) => row[headerIndexes[header]]?.trim() ?? "";
+    const answer = normalizeAnswer(getValue("answer"));
+    const points = Number.parseInt(getValue("points"), 10);
+
+    if (!answer) {
+      throw new Error(`Row ${rowNumber}: answer must be A, B, C, or D`);
+    }
+
+    if (!Number.isFinite(points) || points < 1) {
+      throw new Error(`Row ${rowNumber}: points must be at least 1`);
+    }
+
+    const question = {
+      questionText: getValue("question"),
+      answerA: getValue("optionA"),
+      answerB: getValue("optionB"),
+      answerC: getValue("optionC"),
+      answerD: getValue("optionD"),
+      correctAnswer: answer,
+      points,
+    };
+
+    if (
+      !question.questionText ||
+      !question.answerA ||
+      !question.answerB ||
+      !question.answerC ||
+      !question.answerD
+    ) {
+      throw new Error(`Row ${rowNumber}: all question and option fields are required`);
+    }
+
+    return question;
+  });
+}
+
 export default function AdminPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [passedQuestionPoints, setPassedQuestionPoints] = useState(5);
+  const [selectedBankId, setSelectedBankId] = useState<number | undefined>();
+  const [newBankName, setNewBankName] = useState("");
   const [formData, setFormData] = useState<Partial<Question>>({
     questionText: "",
     answerA: "",
@@ -32,10 +158,30 @@ export default function AdminPanel() {
     points: 10,
   });
 
-  const { data: questions = [], refetch } = trpc.questions.list.useQuery();
+  const { data: banks = [], refetch: refetchBanks } =
+    trpc.questionBanks.list.useQuery();
+  const { data: questions = [], refetch } = trpc.questions.list.useQuery(
+    selectedBankId ? { bankId: selectedBankId } : undefined
+  );
+  const { data: settings, refetch: refetchSettings } = trpc.settings.get.useQuery();
+  const createBankMutation = trpc.questionBanks.create.useMutation();
   const createMutation = trpc.questions.create.useMutation();
+  const bulkCreateMutation = trpc.questions.bulkCreate.useMutation();
   const updateMutation = trpc.questions.update.useMutation();
   const deleteMutation = trpc.questions.delete.useMutation();
+  const updateSettingsMutation = trpc.settings.update.useMutation();
+
+  useEffect(() => {
+    if (settings) {
+      setPassedQuestionPoints(settings.passedQuestionPoints);
+    }
+  }, [settings]);
+
+  useEffect(() => {
+    if (!selectedBankId && banks.length > 0) {
+      setSelectedBankId(banks[0].id);
+    }
+  }, [banks, selectedBankId]);
 
   const handleOpenDialog = (question?: Question) => {
     if (question && question.id) {
@@ -51,6 +197,7 @@ export default function AdminPanel() {
         answerD: "",
         correctAnswer: "A",
         points: 10,
+        bankId: selectedBankId,
       });
     }
     setIsOpen(true);
@@ -79,6 +226,7 @@ export default function AdminPanel() {
         toast.success("Question updated!");
       } else {
         await createMutation.mutateAsync({
+          bankId: selectedBankId,
           questionText: formData.questionText,
           answerA: formData.answerA,
           answerB: formData.answerB,
@@ -108,8 +256,65 @@ export default function AdminPanel() {
     }
   };
 
+  const handleBulkUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      toast.error("Please upload a CSV file");
+      return;
+    }
+
+    try {
+      const csvText = await file.text();
+      const parsedQuestions = parseQuestionsCsv(csvText).map((question) => ({
+        ...question,
+        bankId: selectedBankId,
+      }));
+
+      await bulkCreateMutation.mutateAsync({ questions: parsedQuestions });
+      await refetch();
+      toast.success(`${parsedQuestions.length} questions uploaded!`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to upload CSV");
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      await updateSettingsMutation.mutateAsync({
+        passedQuestionPoints: Math.max(0, passedQuestionPoints),
+      });
+      await refetchSettings();
+      toast.success("Settings saved!");
+    } catch (error) {
+      toast.error("Failed to save settings");
+    }
+  };
+
+  const handleCreateBank = async () => {
+    if (!newBankName.trim()) {
+      toast.error("Enter a question bank name");
+      return;
+    }
+
+    try {
+      const result = await createBankMutation.mutateAsync({
+        name: newBankName.trim(),
+      });
+      setNewBankName("");
+      setSelectedBankId(result.bankId);
+      await refetchBanks();
+      toast.success("Question bank created!");
+    } catch (error) {
+      toast.error("Failed to create question bank");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-6">
+    <div className="h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -119,15 +324,100 @@ export default function AdminPanel() {
           <p className="text-lg text-gray-600">Manage your quiz questions here</p>
         </div>
 
+        {/* Question Bank */}
+        <div className="memphis-card mb-6">
+          <h2 className="text-2xl font-bold uppercase mb-4">Question Bank</h2>
+          <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+            <div>
+              <label className="block text-sm font-bold mb-2">Active Bank</label>
+              <Select
+                value={selectedBankId ? String(selectedBankId) : ""}
+                onValueChange={(value) => setSelectedBankId(Number(value))}
+              >
+                <SelectTrigger className="border-2 border-black">
+                  <SelectValue placeholder="Select a question bank" />
+                </SelectTrigger>
+                <SelectContent>
+                  {banks.map((bank: { id: number; name: string }) => (
+                    <SelectItem key={bank.id} value={String(bank.id)}>
+                      {bank.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold mb-2">New Bank Name</label>
+              <Input
+                value={newBankName}
+                onChange={(e) => setNewBankName(e.target.value)}
+                placeholder="e.g. Biology Round"
+                className="border-2 border-black"
+              />
+            </div>
+            <Button
+              onClick={handleCreateBank}
+              className="memphis-btn bg-[#D4A5E6] text-black"
+            >
+              Create Bank
+            </Button>
+          </div>
+        </div>
+
+        {/* Settings */}
+        <div className="memphis-card mb-6">
+          <h2 className="text-2xl font-bold uppercase mb-4">Admin Settings</h2>
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+            <div className="max-w-xs">
+              <label className="block text-sm font-bold mb-2">
+                Points When Question Is Passed
+              </label>
+              <Input
+                type="number"
+                value={passedQuestionPoints}
+                onChange={(e) =>
+                  setPassedQuestionPoints(
+                    Math.max(0, parseInt(e.target.value, 10) || 0)
+                  )
+                }
+                min="0"
+                className="border-2 border-black"
+              />
+            </div>
+            <Button
+              onClick={handleSaveSettings}
+              className="memphis-btn bg-[#A8E6CF] text-black"
+            >
+              Save Settings
+            </Button>
+          </div>
+        </div>
+
         {/* Create Button */}
-        <div className="mb-6">
+        <div className="mb-6 flex flex-wrap gap-3">
           <Button
             onClick={() => handleOpenDialog()}
+            disabled={!selectedBankId}
             className="memphis-btn bg-[#FF6B9D] text-white hover:bg-[#FF5A8C]"
           >
             <Plus className="mr-2 h-5 w-5" />
             Add Question
           </Button>
+          <label
+            className={`memphis-btn inline-flex items-center bg-[#A8E6CF] px-4 py-2 font-bold text-black ${
+              selectedBankId ? "cursor-pointer" : "cursor-not-allowed opacity-50"
+            }`}
+          >
+            <Upload className="mr-2 h-5 w-5" />
+            Upload CSV
+            <input
+              type="file"
+              accept=".csv,text/csv"
+              onChange={handleBulkUpload}
+              disabled={!selectedBankId}
+              className="hidden"
+            />
+          </label>
         </div>
 
         {/* Questions Grid */}

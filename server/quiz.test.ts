@@ -6,6 +6,8 @@ import * as db from "./db";
 // Mock the database module
 vi.mock("./db", () => ({
   getDb: vi.fn(),
+  createQuestionBank: vi.fn(),
+  getQuestionBanks: vi.fn(),
   getQuestions: vi.fn(),
   getQuestionById: vi.fn(),
   createQuestion: vi.fn(),
@@ -20,6 +22,8 @@ vi.mock("./db", () => ({
   initializeSessionScores: vi.fn(),
   updateScore: vi.fn(),
   recordQuestionResponse: vi.fn(),
+  getNumberSetting: vi.fn(),
+  setNumberSetting: vi.fn(),
 }));
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
@@ -83,6 +87,59 @@ describe("Quiz Questions", () => {
       points: 10,
       createdBy: 1,
     });
+  });
+
+  it("creates questions in bulk", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    vi.mocked(db.createQuestion).mockResolvedValue(undefined as any);
+
+    const result = await caller.questions.bulkCreate({
+      questions: [
+        {
+          questionText: "First question?",
+          answerA: "A1",
+          answerB: "B1",
+          answerC: "C1",
+          answerD: "D1",
+          correctAnswer: "A",
+          points: 10,
+        },
+        {
+          questionText: "Second question?",
+          answerA: "A2",
+          answerB: "B2",
+          answerC: "C2",
+          answerD: "D2",
+          correctAnswer: "C",
+          points: 20,
+        },
+      ],
+    });
+
+    expect(db.createQuestion).toHaveBeenCalledTimes(2);
+    expect(db.createQuestion).toHaveBeenNthCalledWith(1, {
+      questionText: "First question?",
+      answerA: "A1",
+      answerB: "B1",
+      answerC: "C1",
+      answerD: "D1",
+      correctAnswer: "A",
+      points: 10,
+      createdBy: 1,
+    });
+    expect(db.createQuestion).toHaveBeenNthCalledWith(2, {
+      questionText: "Second question?",
+      answerA: "A2",
+      answerB: "B2",
+      answerC: "C2",
+      answerD: "D2",
+      correctAnswer: "C",
+      points: 20,
+      createdBy: 1,
+    });
+    expect(result).toEqual({ success: true, count: 2 });
   });
 
   it("lists all questions", async () => {
@@ -197,6 +254,80 @@ describe("Quiz Questions", () => {
   });
 });
 
+describe("Question Banks", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("creates a question bank", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    vi.mocked(db.createQuestionBank).mockResolvedValueOnce([
+      { insertId: 3 },
+    ] as any);
+
+    const result = await caller.questionBanks.create({ name: "Science" });
+
+    expect(db.createQuestionBank).toHaveBeenCalledWith({
+      name: "Science",
+      createdBy: 1,
+    });
+    expect(result).toEqual({ success: true, bankId: 3 });
+  });
+
+  it("lists question banks", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const mockBanks = [
+      {
+        id: 1,
+        createdBy: 1,
+        name: "Science",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    vi.mocked(db.getQuestionBanks).mockResolvedValueOnce(mockBanks);
+
+    const result = await caller.questionBanks.list();
+
+    expect(db.getQuestionBanks).toHaveBeenCalled();
+    expect(result).toEqual(mockBanks);
+  });
+});
+
+describe("Settings", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("gets quiz settings", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    vi.mocked(db.getNumberSetting).mockResolvedValueOnce(7);
+
+    const result = await caller.settings.get();
+
+    expect(db.getNumberSetting).toHaveBeenCalledWith("passedQuestionPoints", 5);
+    expect(result).toEqual({ passedQuestionPoints: 7 });
+  });
+
+  it("updates quiz settings", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    vi.mocked(db.setNumberSetting).mockResolvedValueOnce(undefined);
+
+    const result = await caller.settings.update({ passedQuestionPoints: 3 });
+
+    expect(db.setNumberSetting).toHaveBeenCalledWith("passedQuestionPoints", 3);
+    expect(result).toEqual({ success: true });
+  });
+});
+
 describe("Quiz Sessions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -223,6 +354,9 @@ describe("Quiz Sessions", () => {
       groupTwoName: "Team B",
       status: "setup",
       currentQuestionIndex: -1,
+      timerStarted: false,
+      answerRevealed: false,
+      questionPassed: false,
     });
     expect(db.addQuestionToSession).toHaveBeenCalledTimes(3);
     expect(db.initializeSessionScores).toHaveBeenCalledWith(1);
@@ -240,6 +374,55 @@ describe("Quiz Sessions", () => {
     expect(db.updateQuizSession).toHaveBeenCalledWith(1, {
       status: "in_progress",
       currentQuestionIndex: 0,
+      timerStarted: false,
+      answerRevealed: false,
+      questionPassed: false,
+    });
+    expect(result).toEqual({ success: true });
+  });
+
+  it("starts the timer for the current question", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    vi.mocked(db.updateQuizSession).mockResolvedValueOnce(undefined);
+
+    const result = await caller.session.startTimer({ id: 1 });
+
+    expect(db.updateQuizSession).toHaveBeenCalledWith(1, {
+      timerStarted: true,
+      questionPassed: false,
+    });
+    expect(result).toEqual({ success: true });
+  });
+
+  it("reveals the answer for the current question", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    vi.mocked(db.updateQuizSession).mockResolvedValueOnce(undefined);
+
+    const result = await caller.session.revealAnswer({ id: 1 });
+
+    expect(db.updateQuizSession).toHaveBeenCalledWith(1, {
+      answerRevealed: true,
+      questionPassed: false,
+    });
+    expect(result).toEqual({ success: true });
+  });
+
+  it("passes the current question without advancing", async () => {
+    const ctx = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    vi.mocked(db.updateQuizSession).mockResolvedValueOnce(undefined);
+
+    const result = await caller.session.passQuestion({ id: 1 });
+
+    expect(db.updateQuizSession).toHaveBeenCalledWith(1, {
+      timerStarted: false,
+      answerRevealed: false,
+      questionPassed: true,
     });
     expect(result).toEqual({ success: true });
   });
@@ -255,6 +438,9 @@ describe("Quiz Sessions", () => {
       groupTwoName: "Team B",
       status: "in_progress" as const,
       currentQuestionIndex: 0,
+      timerStarted: true,
+      answerRevealed: true,
+      questionPassed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -272,6 +458,9 @@ describe("Quiz Sessions", () => {
 
     expect(db.updateQuizSession).toHaveBeenCalledWith(1, {
       currentQuestionIndex: 1,
+      timerStarted: false,
+      answerRevealed: false,
+      questionPassed: false,
     });
     expect(result).toEqual({ success: true, completed: false });
   });
@@ -287,6 +476,9 @@ describe("Quiz Sessions", () => {
       groupTwoName: "Team B",
       status: "in_progress" as const,
       currentQuestionIndex: 1,
+      timerStarted: true,
+      answerRevealed: true,
+      questionPassed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -304,6 +496,9 @@ describe("Quiz Sessions", () => {
 
     expect(db.updateQuizSession).toHaveBeenCalledWith(1, {
       status: "completed",
+      timerStarted: false,
+      answerRevealed: false,
+      questionPassed: false,
     });
     expect(result).toEqual({ success: true, completed: true });
   });

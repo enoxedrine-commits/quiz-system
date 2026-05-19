@@ -1,6 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, quizQuestions, InsertQuizQuestion, quizSessions, InsertQuizSession, quizSessionQuestions, InsertQuizSessionQuestion, scores, InsertScore, questionResponses, InsertQuestionResponse } from "../drizzle/schema";
+import { InsertUser, users, questionBanks, InsertQuestionBank, quizQuestions, InsertQuizQuestion, quizSessions, InsertQuizSession, quizSessionQuestions, InsertQuizSessionQuestion, scores, InsertScore, questionResponses, InsertQuestionResponse, appSettings } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -90,6 +90,22 @@ export async function getUserByOpenId(openId: string) {
 }
 
 // Quiz-related queries
+export async function createQuestionBank(data: InsertQuestionBank) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(questionBanks).values(data);
+  return result;
+}
+
+export async function getQuestionBanks() {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select().from(questionBanks);
+  return result;
+}
+
 export async function createQuestion(data: InsertQuizQuestion) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -98,11 +114,14 @@ export async function createQuestion(data: InsertQuizQuestion) {
   return result;
 }
 
-export async function getQuestions() {
+export async function getQuestions(bankId?: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
-  const result = await db.select().from(quizQuestions);
+
+  const result =
+    bankId === undefined
+      ? await db.select().from(quizQuestions)
+      : await db.select().from(quizQuestions).where(eq(quizQuestions.bankId, bankId));
   return result;
 }
 
@@ -204,6 +223,35 @@ export async function recordQuestionResponse(data: InsertQuestionResponse) {
   if (!db) throw new Error("Database not available");
   
   await db.insert(questionResponses).values(data);
+}
+
+export async function getNumberSetting(settingKey: string, fallback: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db
+    .select()
+    .from(appSettings)
+    .where(eq(appSettings.settingKey, settingKey))
+    .limit(1);
+
+  if (result.length === 0) return fallback;
+
+  const value = Number.parseInt(result[0].settingValue, 10);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+export async function setNumberSetting(settingKey: string, value: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const settingValue = String(value);
+  await db
+    .insert(appSettings)
+    .values({ settingKey, settingValue })
+    .onDuplicateKeyUpdate({
+      set: { settingValue },
+    });
 }
 
 // TODO: add more feature queries here as your schema grows.

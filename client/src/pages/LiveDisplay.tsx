@@ -26,7 +26,6 @@ export default function LiveDisplay() {
 
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
-  const [showAnswer, setShowAnswer] = useState(false);
   const [scores, setScores] = useState<Score[]>([]);
 
   const { data: session } = trpc.session.get.useQuery(
@@ -61,22 +60,34 @@ export default function LiveDisplay() {
       session.currentQuestionIndex < questions.length
     ) {
       setCurrentQuestion(questions[session.currentQuestionIndex]);
-      setShowAnswer(false);
       setTimeLeft(30);
     } else if (session?.status === "completed") {
       // Clear current question when quiz is completed
       setCurrentQuestion(null);
     }
-  }, [session?.currentQuestionIndex, session?.status, questions]);
+  }, [
+    session?.currentQuestionIndex,
+    session?.questionPassed,
+    session?.status,
+    session?.timerStarted,
+    questions,
+  ]);
 
   // Countdown timer
   useEffect(() => {
-    if (!currentQuestion || showAnswer) return;
+    if (
+      !currentQuestion ||
+      session?.answerRevealed ||
+      session?.questionPassed ||
+      !session?.timerStarted ||
+      timeLeft <= 0
+    ) {
+      return;
+    }
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          setShowAnswer(true);
           return 0;
         }
         return prev - 1;
@@ -84,7 +95,7 @@ export default function LiveDisplay() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [currentQuestion, showAnswer]);
+  }, [currentQuestion, session?.answerRevealed, session?.timerStarted, timeLeft]);
 
   if (!match || !session) {
     return (
@@ -161,16 +172,39 @@ export default function LiveDisplay() {
 
             {/* Timer */}
             <div className="flex justify-center mb-8">
-              <div
-                className={`w-32 h-32 rounded-full flex items-center justify-center text-6xl font-bold border-4 ${
-                  showAnswer
-                    ? "bg-green-100 border-green-500 text-green-600"
-                    : timeLeft <= 5
-                    ? "bg-red-100 border-red-500 text-red-600 animate-pulse"
-                    : "bg-[#FFE66D] border-[#FFE66D] text-black"
-                }`}
-              >
-                {timeLeft}
+              <div className="text-center">
+                <div
+                  className={`w-32 h-32 rounded-full flex items-center justify-center text-6xl font-bold border-4 ${
+                    session.answerRevealed
+                      ? "bg-green-100 border-green-500 text-green-600"
+                      : session.questionPassed
+                      ? "bg-blue-100 border-blue-500 text-blue-600"
+                      : !session.timerStarted
+                      ? "bg-white border-black text-black"
+                      : timeLeft === 0
+                      ? "bg-red-100 border-red-500 text-red-600"
+                      : timeLeft <= 5
+                      ? "bg-red-100 border-red-500 text-red-600 animate-pulse"
+                      : "bg-[#FFE66D] border-[#FFE66D] text-black"
+                  }`}
+                >
+                  {timeLeft}
+                </div>
+                {session.questionPassed && (
+                  <p className="mt-3 text-sm font-bold uppercase text-blue-600">
+                    Question has been passed
+                  </p>
+                )}
+                {!session.timerStarted && !session.answerRevealed && !session.questionPassed && (
+                  <p className="mt-3 text-sm font-bold uppercase text-gray-600">
+                    Waiting for host to start timer
+                  </p>
+                )}
+                {session.timerStarted && timeLeft === 0 && !session.answerRevealed && !session.questionPassed && (
+                  <p className="mt-3 text-sm font-bold uppercase text-gray-600">
+                    Waiting for host to show answer
+                  </p>
+                )}
               </div>
             </div>
 
@@ -180,7 +214,8 @@ export default function LiveDisplay() {
                 const answerText =
                   currentQuestion[`answer${letter}` as keyof Question];
                 const isCorrect = letter === currentQuestion.correctAnswer;
-                const shouldHighlight = showAnswer && isCorrect;
+                const shouldHighlight =
+                  session.answerRevealed && !session.questionPassed && isCorrect;
 
                 return (
                   <div
@@ -198,7 +233,7 @@ export default function LiveDisplay() {
             </div>
 
             {/* Points */}
-            {showAnswer && (
+            {session.answerRevealed && !session.questionPassed && (
               <div className="mt-8 text-center bg-[#A8E6CF] bg-opacity-30 p-4 rounded-lg border-2 border-black">
                 <p className="text-sm font-bold">Points for this question:</p>
                 <p className="text-4xl font-bold">{currentQuestion.points}</p>

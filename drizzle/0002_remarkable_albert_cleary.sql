@@ -1,0 +1,1 @@
+ALTER TABLE `quiz_sessions` ADD `timerStarted` boolean DEFAULT false NOT NULL;

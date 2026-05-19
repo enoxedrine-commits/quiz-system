@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Copy, Play, SkipForward, Square } from "lucide-react";
+import { CheckCircle, Clock, Copy, Play, SkipForward, Square } from "lucide-react";
 
 type Question = {
   id?: number;
@@ -24,11 +24,14 @@ type Score = {
   totalPoints: number;
 };
 
+type AwardMode = "normal" | "passed";
+
 export default function HostPanel() {
   const [match, params] = useRoute("/host/:sessionId");
   const sessionId = params?.sessionId ? parseInt(params.sessionId) : 0;
 
   const [showPointDialog, setShowPointDialog] = useState(false);
+  const [awardMode, setAwardMode] = useState<AwardMode>("normal");
   const [selectedGroup, setSelectedGroup] = useState<"1" | "2" | null>(null);
   const [liveUrl, setLiveUrl] = useState("");
 
@@ -46,8 +49,12 @@ export default function HostPanel() {
     { sessionId },
     { enabled: !!sessionId, refetchInterval: 1000 }
   );
+  const { data: settings } = trpc.settings.get.useQuery();
 
   const startMutation = trpc.session.start.useMutation();
+  const startTimerMutation = trpc.session.startTimer.useMutation();
+  const revealAnswerMutation = trpc.session.revealAnswer.useMutation();
+  const passQuestionMutation = trpc.session.passQuestion.useMutation();
   const nextMutation = trpc.session.nextQuestion.useMutation();
   const endMutation = trpc.session.end.useMutation();
   const awardPointsMutation = trpc.scoring.awardPoints.useMutation();
@@ -69,6 +76,16 @@ export default function HostPanel() {
   };
 
   const handleNextQuestion = async () => {
+    const isLastQuestion =
+      session?.currentQuestionIndex === questions.length - 1;
+
+    if (
+      isLastQuestion &&
+      !confirm("This is the last question. Do you want to show the final results now?")
+    ) {
+      return;
+    }
+
     try {
       const result = await nextMutation.mutateAsync({ id: sessionId });
       await refetchSession();
@@ -79,6 +96,36 @@ export default function HostPanel() {
       }
     } catch (error) {
       toast.error("Failed to advance question");
+    }
+  };
+
+  const handleStartTimer = async () => {
+    try {
+      await startTimerMutation.mutateAsync({ id: sessionId });
+      await refetchSession();
+      toast.success("Timer started!");
+    } catch (error) {
+      toast.error("Failed to start timer");
+    }
+  };
+
+  const handleRevealAnswer = async () => {
+    try {
+      await revealAnswerMutation.mutateAsync({ id: sessionId });
+      await refetchSession();
+      toast.success("Answer shown!");
+    } catch (error) {
+      toast.error("Failed to show answer");
+    }
+  };
+
+  const handlePassQuestion = async () => {
+    try {
+      await passQuestionMutation.mutateAsync({ id: sessionId });
+      await refetchSession();
+      toast.success("Question passed!");
+    } catch (error) {
+      toast.error("Failed to pass question");
     }
   };
 
@@ -94,9 +141,19 @@ export default function HostPanel() {
     }
   };
 
+  const handleOpenAwardDialog = (mode: AwardMode) => {
+    setAwardMode(mode);
+    setShowPointDialog(true);
+  };
+
   const handleAwardPoints = async (groupNumber: "1" | "2") => {
     const currentQuestion = questions[session?.currentQuestionIndex || 0];
-    if (!currentQuestion || !currentQuestion.id || !currentQuestion.points) {
+    const points =
+      awardMode === "passed"
+        ? settings?.passedQuestionPoints ?? 5
+        : currentQuestion?.points;
+
+    if (!currentQuestion || !currentQuestion.id || points === undefined) {
       toast.error("No question selected");
       return;
     }
@@ -105,7 +162,7 @@ export default function HostPanel() {
       await awardPointsMutation.mutateAsync({
         sessionId,
         groupNumber,
-        points: currentQuestion.points,
+        points,
         questionId: currentQuestion.id,
       });
       await refetchSession();
@@ -133,6 +190,10 @@ export default function HostPanel() {
   }
 
   const currentQuestion = questions[session.currentQuestionIndex];
+  const isLastQuestion =
+    session.status === "in_progress" &&
+    questions.length > 0 &&
+    session.currentQuestionIndex === questions.length - 1;
   const group1Score = scores.find((s) => s.groupNumber === "1")?.totalPoints || 0;
   const group2Score = scores.find((s) => s.groupNumber === "2")?.totalPoints || 0;
 
@@ -225,17 +286,47 @@ export default function HostPanel() {
               {session.status === "in_progress" && (
                 <>
                   <Button
-                    onClick={handleNextQuestion}
+                    onClick={handleStartTimer}
+                    disabled={session.timerStarted}
+                    className="memphis-btn bg-green-500 text-white disabled:opacity-50"
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    {session.timerStarted ? "Timer Running" : "Start Timer"}
+                  </Button>
+                  <Button
+                    onClick={handlePassQuestion}
+                    disabled={session.questionPassed}
                     className="memphis-btn bg-blue-500 text-white"
                   >
                     <SkipForward className="h-4 w-4 mr-2" />
-                    Next Question
+                    {session.questionPassed ? "Question Passed" : "Pass Question"}
                   </Button>
                   <Button
-                    onClick={() => setShowPointDialog(true)}
+                    onClick={handleNextQuestion}
+                    className="memphis-btn bg-indigo-500 text-white"
+                  >
+                    <SkipForward className="h-4 w-4 mr-2" />
+                    {isLastQuestion ? "Show Results" : "Next Question"}
+                  </Button>
+                  <Button
+                    onClick={handleRevealAnswer}
+                    disabled={session.answerRevealed || session.questionPassed}
+                    className="memphis-btn bg-[#A8E6CF] text-black disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {session.answerRevealed ? "Answer Shown" : "Show Answer"}
+                  </Button>
+                  <Button
+                    onClick={() => handleOpenAwardDialog("normal")}
                     className="memphis-btn bg-[#FFE66D] text-black"
                   >
                     Award Points
+                  </Button>
+                  <Button
+                    onClick={() => handleOpenAwardDialog("passed")}
+                    className="memphis-btn bg-orange-400 text-black"
+                  >
+                    Award Passed Question Points
                   </Button>
                 </>
               )}
@@ -259,6 +350,14 @@ export default function HostPanel() {
             <h2 className="text-2xl font-bold uppercase mb-4">
               Question {session.currentQuestionIndex + 1} of {questions.length}
             </h2>
+            {isLastQuestion && (
+              <div className="mb-4 bg-[#FFE66D] bg-opacity-40 p-4 rounded-lg border-2 border-black">
+                <p className="font-bold uppercase">
+                  This is the last question. Press Show Results when you are ready
+                  to finish the quiz.
+                </p>
+              </div>
+            )}
             <div className="bg-white p-4 rounded-lg border-2 border-black mb-4">
               <p className="text-xl font-bold mb-4">{currentQuestion.questionText}</p>
               <div className="grid grid-cols-2 gap-3">
@@ -298,13 +397,21 @@ export default function HostPanel() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold uppercase">
-              Award Points
+              {awardMode === "passed"
+                ? "Award Passed Question Points"
+                : "Award Points"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <p className="text-lg font-bold">
               Which group answered correctly?
+            </p>
+            <p className="text-sm font-bold text-gray-600">
+              Points to award:{" "}
+              {awardMode === "passed"
+                ? settings?.passedQuestionPoints ?? 5
+                : currentQuestion?.points ?? 0}
             </p>
 
             <div className="grid grid-cols-2 gap-4">

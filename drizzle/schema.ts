@@ -26,12 +26,28 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * Question banks table
+ * Groups questions into selectable quiz sets.
+ */
+export const questionBanks = mysqlTable("question_banks", {
+  id: int("id").autoincrement().primaryKey(),
+  createdBy: int("createdBy").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type QuestionBank = typeof questionBanks.$inferSelect;
+export type InsertQuestionBank = typeof questionBanks.$inferInsert;
+
+/**
  * Quiz questions table
  * Stores all quiz questions with multiple choice answers
  */
 export const quizQuestions = mysqlTable("quiz_questions", {
   id: int("id").autoincrement().primaryKey(),
   createdBy: int("createdBy").notNull(),
+  bankId: int("bankId"),
   questionText: text("questionText").notNull(),
   answerA: text("answerA").notNull(),
   answerB: text("answerB").notNull(),
@@ -57,6 +73,9 @@ export const quizSessions = mysqlTable("quiz_sessions", {
   groupTwoName: varchar("groupTwoName", { length: 255 }).notNull(),
   status: mysqlEnum("status", ["setup", "in_progress", "completed"]).default("setup").notNull(),
   currentQuestionIndex: int("currentQuestionIndex").default(-1).notNull(),
+  timerStarted: boolean("timerStarted").default(false).notNull(),
+  answerRevealed: boolean("answerRevealed").default(false).notNull(),
+  questionPassed: boolean("questionPassed").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -110,3 +129,16 @@ export const questionResponses = mysqlTable("question_responses", {
 
 export type QuestionResponse = typeof questionResponses.$inferSelect;
 export type InsertQuestionResponse = typeof questionResponses.$inferInsert;
+
+/**
+ * App settings table
+ * Stores configurable quiz behavior values.
+ */
+export const appSettings = mysqlTable("app_settings", {
+  settingKey: varchar("settingKey", { length: 100 }).primaryKey(),
+  settingValue: varchar("settingValue", { length: 255 }).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
+export type InsertAppSetting = typeof appSettings.$inferInsert;

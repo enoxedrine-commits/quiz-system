@@ -1,22 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
 export default function GroupSetup() {
   const [, setLocation] = useLocation();
   const [groupOneName, setGroupOneName] = useState("");
   const [groupTwoName, setGroupTwoName] = useState("");
+  const [selectedBankId, setSelectedBankId] = useState<number | undefined>();
   const [isLoading, setIsLoading] = useState(false);
 
-  const { data: questions = [] } = trpc.questions.list.useQuery();
+  const { data: banks = [] } = trpc.questionBanks.list.useQuery();
+  const { data: questions = [] } = trpc.questions.list.useQuery(
+    selectedBankId ? { bankId: selectedBankId } : undefined,
+    { enabled: !!selectedBankId }
+  );
   const createSessionMutation = trpc.session.create.useMutation();
+
+  useEffect(() => {
+    if (!selectedBankId && banks.length > 0) {
+      setSelectedBankId(banks[0].id);
+    }
+  }, [banks, selectedBankId]);
 
   const handleStartQuiz = async () => {
     if (!groupOneName.trim() || !groupTwoName.trim()) {
       toast.error("Please enter both group names");
+      return;
+    }
+
+    if (!selectedBankId) {
+      toast.error("Please select a question bank");
       return;
     }
 
@@ -85,6 +102,28 @@ export default function GroupSetup() {
             />
           </div>
 
+          {/* Question Bank */}
+          <div>
+            <label className="block text-sm font-bold mb-3 uppercase">
+              Question Bank
+            </label>
+            <Select
+              value={selectedBankId ? String(selectedBankId) : ""}
+              onValueChange={(value) => setSelectedBankId(Number(value))}
+            >
+              <SelectTrigger className="border-2 border-black text-lg py-3 font-semibold">
+                <SelectValue placeholder="Select question bank" />
+              </SelectTrigger>
+              <SelectContent>
+                {banks.map((bank: { id: number; name: string }) => (
+                  <SelectItem key={bank.id} value={String(bank.id)}>
+                    {bank.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Question Count */}
           <div className="bg-[#A8E6CF] bg-opacity-30 p-4 rounded-lg border-2 border-black">
             <p className="text-sm font-bold">Questions Ready:</p>
@@ -94,7 +133,12 @@ export default function GroupSetup() {
           {/* Start Button */}
           <Button
             onClick={handleStartQuiz}
-            disabled={isLoading || !groupOneName.trim() || !groupTwoName.trim()}
+            disabled={
+              isLoading ||
+              !groupOneName.trim() ||
+              !groupTwoName.trim() ||
+              !selectedBankId
+            }
             className="memphis-btn bg-[#FF6B9D] text-white w-full text-lg font-bold py-6 hover:bg-[#FF5A8C] disabled:opacity-50"
           >
             {isLoading ? "Starting..." : "Start Quiz"}

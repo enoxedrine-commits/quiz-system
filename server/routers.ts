@@ -1,10 +1,13 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { adminProcedure, publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import { TRPCError } from "@trpc/server";
+
+const PASSED_QUESTION_POINTS_KEY = "passedQuestionPoints";
+const DEFAULT_PASSED_QUESTION_POINTS = 5;
 
 export const appRouter = router({
   system: systemRouter,
@@ -20,10 +23,33 @@ export const appRouter = router({
   }),
 
   // Quiz Questions Management
-  questions: router({
+  questionBanks: router({
     list: protectedProcedure.query(async () => {
-      return await db.getQuestions();
+      return await db.getQuestionBanks();
     }),
+
+    create: adminProcedure
+      .input(
+        z.object({
+          name: z.string().min(1, "Bank name is required"),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const result = await db.createQuestionBank({
+          name: input.name,
+          createdBy: ctx.user.id,
+        });
+
+        return { success: true, bankId: result[0].insertId };
+      }),
+  }),
+
+  questions: router({
+    list: protectedProcedure
+      .input(z.object({ bankId: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return await db.getQuestions(input?.bankId);
+      }),
 
     get: protectedProcedure
       .input(z.object({ id: z.number() }))
@@ -42,6 +68,7 @@ export const appRouter = router({
       .input(
         z.object({
           questionText: z.string().min(1, "Question text is required"),
+          bankId: z.number().optional(),
           answerA: z.string().min(1, "Answer A is required"),
           answerB: z.string().min(1, "Answer B is required"),
           answerC: z.string().min(1, "Answer C is required"),
@@ -55,6 +82,36 @@ export const appRouter = router({
           ...input,
           createdBy: ctx.user.id,
         });
+      }),
+
+    bulkCreate: protectedProcedure
+      .input(
+        z.object({
+          questions: z
+            .array(
+              z.object({
+                questionText: z.string().min(1, "Question text is required"),
+                bankId: z.number().optional(),
+                answerA: z.string().min(1, "Answer A is required"),
+                answerB: z.string().min(1, "Answer B is required"),
+                answerC: z.string().min(1, "Answer C is required"),
+                answerD: z.string().min(1, "Answer D is required"),
+                correctAnswer: z.enum(["A", "B", "C", "D"]),
+                points: z.number().int().min(1, "Points must be at least 1"),
+              })
+            )
+            .min(1, "At least one question is required"),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        for (const question of input.questions) {
+          await db.createQuestion({
+            ...question,
+            createdBy: ctx.user.id,
+          });
+        }
+
+        return { success: true, count: input.questions.length };
       }),
 
     update: protectedProcedure
@@ -84,6 +141,32 @@ export const appRouter = router({
       }),
   }),
 
+  settings: router({
+    get: protectedProcedure.query(async () => {
+      const passedQuestionPoints = await db.getNumberSetting(
+        PASSED_QUESTION_POINTS_KEY,
+        DEFAULT_PASSED_QUESTION_POINTS
+      );
+
+      return { passedQuestionPoints };
+    }),
+
+    update: adminProcedure
+      .input(
+        z.object({
+          passedQuestionPoints: z.number().int().min(0),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await db.setNumberSetting(
+          PASSED_QUESTION_POINTS_KEY,
+          input.passedQuestionPoints
+        );
+
+        return { success: true };
+      }),
+  }),
+
   // Quiz Session Management
   session: router({
     create: protectedProcedure
@@ -102,6 +185,9 @@ export const appRouter = router({
           groupTwoName: input.groupTwoName,
           status: "setup",
           currentQuestionIndex: -1,
+          timerStarted: false,
+          answerRevealed: false,
+          questionPassed: false,
         });
 
         const sessionId = sessionResult[0].insertId;
@@ -140,6 +226,40 @@ export const appRouter = router({
         await db.updateQuizSession(input.id, {
           status: "in_progress",
           currentQuestionIndex: 0,
+          timerStarted: false,
+          answerRevealed: false,
+          questionPassed: false,
+        });
+        return { success: true };
+      }),
+
+    startTimer: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateQuizSession(input.id, {
+          timerStarted: true,
+          questionPassed: false,
+        });
+        return { success: true };
+      }),
+
+    revealAnswer: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateQuizSession(input.id, {
+          answerRevealed: true,
+          questionPassed: false,
+        });
+        return { success: true };
+      }),
+
+    passQuestion: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await db.updateQuizSession(input.id, {
+          timerStarted: false,
+          answerRevealed: false,
+          questionPassed: true,
         });
         return { success: true };
       }),
@@ -161,12 +281,18 @@ export const appRouter = router({
         if (nextIndex >= questions.length) {
           await db.updateQuizSession(input.id, {
             status: "completed",
+            timerStarted: false,
+            answerRevealed: false,
+            questionPassed: false,
           });
           return { success: true, completed: true };
         }
 
         await db.updateQuizSession(input.id, {
           currentQuestionIndex: nextIndex,
+          timerStarted: false,
+          answerRevealed: false,
+          questionPassed: false,
         });
         return { success: true, completed: false };
       }),
@@ -207,7 +333,7 @@ export const appRouter = router({
         z.object({
           sessionId: z.number(),
           groupNumber: z.enum(["1", "2"]),
-          points: z.number().int().min(1),
+          points: z.number().int().min(0),
           questionId: z.number(),
         })
       )

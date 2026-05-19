@@ -1,0 +1,1 @@
+ALTER TABLE `quiz_sessions` ADD `answerRevealed` boolean DEFAULT false NOT NULL;
