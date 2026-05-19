@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 
 type Question = {
   id?: number;
+  questionType?: "multiple_choice" | "single_answer";
   questionText?: string;
   answerA?: string;
   answerB?: string;
@@ -109,23 +110,10 @@ export default function LiveDisplay() {
 
   const group1Score = scores.find((s) => s.groupNumber === "1")?.totalPoints || 0;
   const group2Score = scores.find((s) => s.groupNumber === "2")?.totalPoints || 0;
+  const isSingleAnswerQuestion = currentQuestion?.questionType === "single_answer";
 
   return (
     <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6 lg:p-8">
-      {/* Scoreboard */}
-      <div className="mx-auto mb-5 grid max-w-2xl grid-cols-2 gap-3 sm:mb-8 sm:gap-6">
-        <div className="memphis-card p-3 text-center sm:p-6">
-          <h2 className="mb-2 break-words text-sm font-bold uppercase sm:text-xl">{session.groupOneName}</h2>
-          <div className="text-3xl font-bold text-[#FF6B9D] sm:text-5xl lg:text-6xl">{group1Score}</div>
-          <p className="text-sm text-gray-600 mt-2">Points</p>
-        </div>
-        <div className="memphis-card p-3 text-center sm:p-6">
-          <h2 className="mb-2 break-words text-sm font-bold uppercase sm:text-xl">{session.groupTwoName}</h2>
-          <div className="text-3xl font-bold text-[#A8E6CF] sm:text-5xl lg:text-6xl">{group2Score}</div>
-          <p className="text-sm text-gray-600 mt-2">Points</p>
-        </div>
-      </div>
-
       {/* Main Content - Check status first */}
       {session.status === "completed" ? (
         // Quiz Complete Screen
@@ -209,29 +197,41 @@ export default function LiveDisplay() {
             </div>
 
             {/* Answers */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              {["A", "B", "C", "D"].map((letter) => {
-                const answerText =
-                  currentQuestion[`answer${letter}` as keyof Question];
-                const isCorrect = letter === currentQuestion.correctAnswer;
-                const shouldHighlight =
-                  session.answerRevealed && !session.questionPassed && isCorrect;
+            {isSingleAnswerQuestion ? (
+              session.answerRevealed && !session.questionPassed ? (
+                <div className="break-words rounded-xl border-4 border-green-600 bg-green-300 p-4 text-center text-lg font-bold uppercase shadow-lg sm:p-6 sm:text-2xl">
+                  {currentQuestion.answerA}
+                </div>
+              ) : (
+                <div className="rounded-xl border-4 border-black bg-white p-4 text-center text-lg font-bold uppercase sm:p-6 sm:text-2xl">
+                  Answer hidden
+                </div>
+              )
+            ) : (
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                {["A", "B", "C", "D"].map((letter) => {
+                  const answerText =
+                    currentQuestion[`answer${letter}` as keyof Question];
+                  const isCorrect = letter === currentQuestion.correctAnswer;
+                  const shouldHighlight =
+                    session.answerRevealed && !session.questionPassed && isCorrect;
 
-                return (
-                  <div
-                    key={letter}
-                    className={`break-words rounded-xl border-4 p-3 text-sm font-bold uppercase transition-all sm:p-6 sm:text-lg ${
-                      shouldHighlight
-                        ? "bg-green-300 border-green-600 scale-105 shadow-lg"
-                        : "bg-white border-black"
-                    }`}
-                  >
-                    <span className="font-black text-lg sm:text-2xl">{letter}.</span>{" "}
-                    {answerText}
-                  </div>
-                );
-              })}
-            </div>
+                  return (
+                    <div
+                      key={letter}
+                      className={`break-words rounded-xl border-4 p-3 text-sm font-bold uppercase transition-all sm:p-6 sm:text-lg ${
+                        shouldHighlight
+                          ? "bg-green-300 border-green-600 scale-105 shadow-lg"
+                          : "bg-white border-black"
+                      }`}
+                    >
+                      <span className="font-black text-lg sm:text-2xl">{letter}.</span>{" "}
+                      {answerText}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Points */}
             {session.answerRevealed && !session.questionPassed && (

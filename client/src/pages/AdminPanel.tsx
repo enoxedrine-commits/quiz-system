@@ -13,6 +13,7 @@ import { toast } from "sonner";
 type Question = {
   id?: number;
   bankId?: number | null;
+  questionType?: "multiple_choice" | "single_answer";
   questionText?: string;
   answerA?: string;
   answerB?: string;
@@ -33,6 +34,7 @@ const requiredCsvHeaders = [
 ] as const;
 
 type CsvHeader = (typeof requiredCsvHeaders)[number];
+type QuestionType = "multiple_choice" | "single_answer";
 
 function parseCsvRows(csvText: string) {
   const rows: string[][] = [];
@@ -82,6 +84,13 @@ function normalizeAnswer(answer: string): "A" | "B" | "C" | "D" | null {
     : null;
 }
 
+function normalizeQuestionType(type: string): QuestionType {
+  const normalized = type.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return normalized === "single_answer" || normalized === "single" || normalized === "open"
+    ? "single_answer"
+    : "multiple_choice";
+}
+
 function parseQuestionsCsv(csvText: string) {
   const rows = parseCsvRows(csvText);
   if (rows.length < 2) {
@@ -108,10 +117,14 @@ function parseQuestionsCsv(csvText: string) {
   return rows.slice(1).map((row, index) => {
     const rowNumber = index + 2;
     const getValue = (header: CsvHeader) => row[headerIndexes[header]]?.trim() ?? "";
+    const typeIndex = headers.indexOf("type");
+    const questionType: QuestionType = typeIndex === -1
+      ? "multiple_choice"
+      : normalizeQuestionType(row[typeIndex] ?? "");
     const answer = normalizeAnswer(getValue("answer"));
     const points = Number.parseInt(getValue("points"), 10);
 
-    if (!answer) {
+    if (questionType === "multiple_choice" && !answer) {
       throw new Error(`Row ${rowNumber}: answer must be A, B, C, or D`);
     }
 
@@ -120,22 +133,25 @@ function parseQuestionsCsv(csvText: string) {
     }
 
     const question = {
+      questionType,
       questionText: getValue("question"),
       answerA: getValue("optionA"),
       answerB: getValue("optionB"),
       answerC: getValue("optionC"),
       answerD: getValue("optionD"),
-      correctAnswer: answer,
+      correctAnswer: answer ?? "A",
       points,
     };
 
-    if (
-      !question.questionText ||
-      !question.answerA ||
+    if (!question.questionText || !question.answerA) {
+      throw new Error(`Row ${rowNumber}: question and answer fields are required`);
+    }
+
+    if (question.questionType === "multiple_choice" && (
       !question.answerB ||
       !question.answerC ||
       !question.answerD
-    ) {
+    )) {
       throw new Error(`Row ${rowNumber}: all question and option fields are required`);
     }
 
@@ -151,6 +167,7 @@ export default function AdminPanel() {
   const [selectedBankId, setSelectedBankId] = useState<number | undefined>();
   const [newBankName, setNewBankName] = useState("");
   const [formData, setFormData] = useState<Partial<Question>>({
+    questionType: "multiple_choice",
     questionText: "",
     answerA: "",
     answerB: "",
@@ -192,6 +209,7 @@ export default function AdminPanel() {
     } else {
       setEditingId(null);
       setFormData({
+        questionType: "multiple_choice",
         questionText: "",
         answerA: "",
         answerB: "",
@@ -206,36 +224,53 @@ export default function AdminPanel() {
   };
 
   const handleSave = async () => {
+    const questionType = formData.questionType ?? "multiple_choice";
+
     if (
       !formData.questionText ||
       !formData.answerA ||
-      !formData.answerB ||
-      !formData.answerC ||
-      !formData.answerD ||
-      !formData.correctAnswer ||
       !formData.points
     ) {
-      toast.error("Please fill in all fields");
+      toast.error("Please fill in the question, answer, and points");
+      return;
+    }
+
+    if (
+      questionType === "multiple_choice" &&
+      (!formData.answerB ||
+        !formData.answerC ||
+        !formData.answerD ||
+        !formData.correctAnswer)
+    ) {
+      toast.error("Please fill in all multiple-choice fields");
       return;
     }
 
     try {
+      const questionPayload = {
+        questionType,
+        questionText: formData.questionText,
+        answerA: formData.answerA,
+        answerB: questionType === "single_answer" ? "" : formData.answerB,
+        answerC: questionType === "single_answer" ? "" : formData.answerC,
+        answerD: questionType === "single_answer" ? "" : formData.answerD,
+        correctAnswer:
+          questionType === "single_answer"
+            ? ("A" as const)
+            : (formData.correctAnswer as "A" | "B" | "C" | "D"),
+        points: formData.points,
+      };
+
       if (editingId) {
         await updateMutation.mutateAsync({
           id: editingId,
-          ...formData,
+          ...questionPayload,
         });
         toast.success("Question updated!");
       } else {
         await createMutation.mutateAsync({
           bankId: selectedBankId,
-          questionText: formData.questionText,
-          answerA: formData.answerA,
-          answerB: formData.answerB,
-          answerC: formData.answerC,
-          answerD: formData.answerD,
-          correctAnswer: formData.correctAnswer as "A" | "B" | "C" | "D",
-          points: formData.points,
+          ...questionPayload,
         });
         toast.success("Question created!");
       }
@@ -314,6 +349,8 @@ export default function AdminPanel() {
       toast.error("Failed to create question bank");
     }
   };
+
+  const isSingleAnswerQuestion = formData.questionType === "single_answer";
 
   return (
     <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6">
@@ -443,6 +480,7 @@ export default function AdminPanel() {
           ) : (
             questions.map((question: Question) => {
               if (!question.id) return null;
+              const isSingleAnswer = question.questionType === "single_answer";
               return (
               <div
                 key={question.id}
@@ -453,30 +491,44 @@ export default function AdminPanel() {
                     <h3 className="mb-3 break-words text-lg font-bold uppercase sm:text-xl">
                       {question.questionText}
                     </h3>
-                    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="bg-[#A8E6CF] bg-opacity-30 p-3 rounded-lg">
-                        <span className="font-bold">A:</span> {question.answerA}
+                    {isSingleAnswer ? (
+                      <div className="mb-4 bg-[#A8E6CF] bg-opacity-30 p-3 rounded-lg">
+                        <span className="font-bold">Answer:</span> {question.answerA}
                       </div>
-                      <div className="bg-[#D4A5E6] bg-opacity-30 p-3 rounded-lg">
-                        <span className="font-bold">B:</span> {question.answerB}
+                    ) : (
+                      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="bg-[#A8E6CF] bg-opacity-30 p-3 rounded-lg">
+                          <span className="font-bold">A:</span> {question.answerA}
+                        </div>
+                        <div className="bg-[#D4A5E6] bg-opacity-30 p-3 rounded-lg">
+                          <span className="font-bold">B:</span> {question.answerB}
+                        </div>
+                        <div className="bg-[#FFE66D] bg-opacity-30 p-3 rounded-lg">
+                          <span className="font-bold">C:</span> {question.answerC}
+                        </div>
+                        <div className="bg-[#FF9F43] bg-opacity-30 p-3 rounded-lg">
+                          <span className="font-bold">D:</span> {question.answerD}
+                        </div>
                       </div>
-                      <div className="bg-[#FFE66D] bg-opacity-30 p-3 rounded-lg">
-                        <span className="font-bold">C:</span> {question.answerC}
-                      </div>
-                      <div className="bg-[#FF9F43] bg-opacity-30 p-3 rounded-lg">
-                        <span className="font-bold">D:</span> {question.answerD}
-                      </div>
-                    </div>
+                    )}
                     <div className="flex flex-col gap-3 text-sm sm:flex-row sm:gap-4">
                       <div>
-                        <span className="font-bold">Correct Answer:</span>{" "}
-                        <span className="bg-green-200 px-2 py-1 rounded font-bold">
-                          {question.correctAnswer}
+                        <span className="font-bold">Type:</span>{" "}
+                        <span className="bg-purple-200 px-2 py-1 rounded font-bold">
+                          {isSingleAnswer ? "Single Answer" : "Multiple Choice"}
                         </span>
                       </div>
+                      {!isSingleAnswer && (
+                        <div>
+                          <span className="font-bold">Correct Answer:</span>{" "}
+                          <span className="bg-green-200 px-2 py-1 rounded font-bold">
+                            {question.correctAnswer}
+                          </span>
+                        </div>
+                      )}
                       <div>
                         <span className="font-bold">Points:</span>{" "}
-                        <span className="bg-blue-200 px-2 py-1 rounded font-bold">
+                        <span className="bg-green-200 px-2 py-1 rounded font-bold">
                           {question.points}
                         </span>
                       </div>
@@ -518,6 +570,28 @@ export default function AdminPanel() {
 
           <div className="space-y-4">
             <div>
+              <label className="block text-sm font-bold mb-2">Question Type</label>
+              <Select
+                value={formData.questionType || "multiple_choice"}
+                onValueChange={(value) =>
+                  setFormData({
+                    ...formData,
+                    questionType: value as QuestionType,
+                    correctAnswer: value === "single_answer" ? "A" : formData.correctAnswer || "A",
+                  })
+                }
+              >
+                <SelectTrigger className="border-2 border-black">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="multiple_choice">Multiple Choice</SelectItem>
+                  <SelectItem value="single_answer">Single Answer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <label className="block text-sm font-bold mb-2">Question Text</label>
               <Textarea
                 value={formData.questionText || ""}
@@ -529,49 +603,65 @@ export default function AdminPanel() {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {["A", "B", "C", "D"].map((letter) => (
-                <div key={letter}>
-                  <label className="block text-sm font-bold mb-2">Answer {letter}</label>
-                  <Input
-                    value={formData[`answer${letter}` as keyof Question] || ""}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        [`answer${letter}`]: e.target.value,
-                      })
-                    }
-                    placeholder={`Answer ${letter}`}
-                    className="border-2 border-black"
-                  />
-                </div>
-              ))}
-            </div>
+            {isSingleAnswerQuestion ? (
+              <div>
+                <label className="block text-sm font-bold mb-2">Answer</label>
+                <Textarea
+                  value={formData.answerA || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, answerA: e.target.value })
+                  }
+                  placeholder="Enter the answer"
+                  className="border-2 border-black"
+                />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {["A", "B", "C", "D"].map((letter) => (
+                  <div key={letter}>
+                    <label className="block text-sm font-bold mb-2">Answer {letter}</label>
+                    <Input
+                      value={formData[`answer${letter}` as keyof Question] || ""}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          [`answer${letter}`]: e.target.value,
+                        })
+                      }
+                      placeholder={`Answer ${letter}`}
+                      className="border-2 border-black"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-bold mb-2">Correct Answer</label>
-                <Select
-                  value={formData.correctAnswer || "A"}
-                  onValueChange={(value) =>
-                    setFormData({
-                      ...formData,
-                      correctAnswer: value as "A" | "B" | "C" | "D",
-                    })
-                  }
-                >
-                  <SelectTrigger className="border-2 border-black">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["A", "B", "C", "D"].map((letter) => (
-                      <SelectItem key={letter} value={letter}>
-                        {letter}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {!isSingleAnswerQuestion && (
+                <div>
+                  <label className="block text-sm font-bold mb-2">Correct Answer</label>
+                  <Select
+                    value={formData.correctAnswer || "A"}
+                    onValueChange={(value) =>
+                      setFormData({
+                        ...formData,
+                        correctAnswer: value as "A" | "B" | "C" | "D",
+                      })
+                    }
+                  >
+                    <SelectTrigger className="border-2 border-black">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {["A", "B", "C", "D"].map((letter) => (
+                        <SelectItem key={letter} value={letter}>
+                          {letter}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-bold mb-2">Points</label>

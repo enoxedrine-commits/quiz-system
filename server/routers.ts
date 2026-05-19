@@ -8,6 +8,61 @@ import { TRPCError } from "@trpc/server";
 
 const PASSED_QUESTION_POINTS_KEY = "passedQuestionPoints";
 const DEFAULT_PASSED_QUESTION_POINTS = 5;
+const QUESTION_TYPES = ["multiple_choice", "single_answer"] as const;
+const ANSWER_OPTIONS = ["A", "B", "C", "D"] as const;
+
+const questionInputSchema = z
+  .object({
+    questionType: z.enum(QUESTION_TYPES).default("multiple_choice"),
+    questionText: z.string().min(1, "Question text is required"),
+    bankId: z.number().optional(),
+    answerA: z.string().min(1, "Answer is required"),
+    answerB: z.string().optional().default(""),
+    answerC: z.string().optional().default(""),
+    answerD: z.string().optional().default(""),
+    correctAnswer: z.enum(ANSWER_OPTIONS).optional().default("A"),
+    points: z.number().int().min(1, "Points must be at least 1"),
+  })
+  .superRefine((question, ctx) => {
+    if (question.questionType !== "multiple_choice") return;
+
+    (["answerB", "answerC", "answerD"] as const).forEach((field) => {
+      if (!question[field].trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [field],
+          message: `${field.replace("answer", "Answer ")} is required`,
+        });
+      }
+    });
+  });
+
+const questionUpdateSchema = z.object({
+  id: z.number(),
+  questionType: z.enum(QUESTION_TYPES).optional(),
+  questionText: z.string().optional(),
+  answerA: z.string().optional(),
+  answerB: z.string().optional(),
+  answerC: z.string().optional(),
+  answerD: z.string().optional(),
+  correctAnswer: z.enum(ANSWER_OPTIONS).optional(),
+  points: z.number().int().optional(),
+});
+
+function normalizeQuestionInput(question: z.infer<typeof questionInputSchema>) {
+  if (question.questionType === "single_answer") {
+    return {
+      ...question,
+      answerB: "",
+      answerC: "",
+      answerD: "",
+      correctAnswer: "A" as const,
+    };
+  }
+
+  const { questionType, ...multipleChoiceQuestion } = question;
+  return multipleChoiceQuestion;
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -65,21 +120,10 @@ export const appRouter = router({
       }),
 
     create: protectedProcedure
-      .input(
-        z.object({
-          questionText: z.string().min(1, "Question text is required"),
-          bankId: z.number().optional(),
-          answerA: z.string().min(1, "Answer A is required"),
-          answerB: z.string().min(1, "Answer B is required"),
-          answerC: z.string().min(1, "Answer C is required"),
-          answerD: z.string().min(1, "Answer D is required"),
-          correctAnswer: z.enum(["A", "B", "C", "D"]),
-          points: z.number().int().min(1, "Points must be at least 1"),
-        })
-      )
+      .input(questionInputSchema)
       .mutation(async ({ input, ctx }) => {
         return await db.createQuestion({
-          ...input,
+          ...normalizeQuestionInput(input),
           createdBy: ctx.user.id,
         });
       }),
@@ -88,25 +132,14 @@ export const appRouter = router({
       .input(
         z.object({
           questions: z
-            .array(
-              z.object({
-                questionText: z.string().min(1, "Question text is required"),
-                bankId: z.number().optional(),
-                answerA: z.string().min(1, "Answer A is required"),
-                answerB: z.string().min(1, "Answer B is required"),
-                answerC: z.string().min(1, "Answer C is required"),
-                answerD: z.string().min(1, "Answer D is required"),
-                correctAnswer: z.enum(["A", "B", "C", "D"]),
-                points: z.number().int().min(1, "Points must be at least 1"),
-              })
-            )
+            .array(questionInputSchema)
             .min(1, "At least one question is required"),
         })
       )
       .mutation(async ({ input, ctx }) => {
         for (const question of input.questions) {
           await db.createQuestion({
-            ...question,
+            ...normalizeQuestionInput(question),
             createdBy: ctx.user.id,
           });
         }
@@ -115,21 +148,21 @@ export const appRouter = router({
       }),
 
     update: protectedProcedure
-      .input(
-        z.object({
-          id: z.number(),
-          questionText: z.string().optional(),
-          answerA: z.string().optional(),
-          answerB: z.string().optional(),
-          answerC: z.string().optional(),
-          answerD: z.string().optional(),
-          correctAnswer: z.enum(["A", "B", "C", "D"]).optional(),
-          points: z.number().int().optional(),
-        })
-      )
+      .input(questionUpdateSchema)
       .mutation(async ({ input }) => {
         const { id, ...updateData } = input;
-        await db.updateQuestion(id, updateData);
+        await db.updateQuestion(
+          id,
+          updateData.questionType === "single_answer"
+            ? {
+                ...updateData,
+                answerB: "",
+                answerC: "",
+                answerD: "",
+                correctAnswer: "A",
+              }
+            : updateData
+        );
         return await db.getQuestionById(id);
       }),
 

@@ -73,7 +73,7 @@ export default function Home() {
                   Manage Questions
                 </h2>
                 <p className="text-gray-600">
-                  Create, edit, and delete quiz questions with multiple choice answers
+                  Create, edit, and delete quiz questions with multiple choice or single answers
                 </p>
               </div>
               <Button className="memphis-btn bg-[#A8E6CF] text-black w-full mt-4 group-hover:bg-[#FFE66D]">

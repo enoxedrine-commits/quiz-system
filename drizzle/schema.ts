@@ -48,6 +48,9 @@ export const quizQuestions = mysqlTable("quiz_questions", {
   id: int("id").autoincrement().primaryKey(),
   createdBy: int("createdBy").notNull(),
   bankId: int("bankId"),
+  questionType: mysqlEnum("questionType", ["multiple_choice", "single_answer"])
+    .default("multiple_choice")
+    .notNull(),
   questionText: text("questionText").notNull(),
   answerA: text("answerA").notNull(),
   answerB: text("answerB").notNull(),

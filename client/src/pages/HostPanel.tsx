@@ -9,6 +9,7 @@ import { CheckCircle, Clock, Copy, Play, SkipForward, Square } from "lucide-reac
 
 type Question = {
   id?: number;
+  questionType?: "multiple_choice" | "single_answer";
   questionText?: string;
   answerA?: string;
   answerB?: string;
@@ -218,6 +219,7 @@ export default function HostPanel() {
     session.currentQuestionIndex === questions.length - 1;
   const group1Score = scores.find((s) => s.groupNumber === "1")?.totalPoints || 0;
   const group2Score = scores.find((s) => s.groupNumber === "2")?.totalPoints || 0;
+  const isSingleAnswerQuestion = currentQuestion?.questionType === "single_answer";
 
   return (
     <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6">
@@ -396,28 +398,36 @@ export default function HostPanel() {
             )}
             <div className="bg-white p-4 rounded-lg border-2 border-black mb-4">
               <p className="mb-4 break-words text-lg font-bold sm:text-xl">{currentQuestion.questionText}</p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {["A", "B", "C", "D"].map((letter) => (
-                  <div
-                    key={letter}
-                    className={`break-words p-3 rounded-lg border-2 ${
-                      letter === currentQuestion.correctAnswer
-                        ? "bg-green-100 border-green-600"
-                        : "bg-gray-100 border-gray-300"
-                    }`}
-                  >
-                    <span className="font-bold">{letter}:</span>{" "}
-                    {currentQuestion[`answer${letter}` as keyof Question]}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-col gap-4 sm:flex-row">
-                <div className="flex-1 bg-[#FFE66D] bg-opacity-30 p-3 rounded-lg border-2 border-black">
-                  <p className="text-sm font-bold">Correct Answer</p>
-                  <p className="text-2xl font-bold">
-                    {currentQuestion.correctAnswer}
-                  </p>
+              {isSingleAnswerQuestion ? (
+                <div className="break-words rounded-lg border-2 border-green-600 bg-green-100 p-3">
+                  <span className="font-bold">Answer:</span> {currentQuestion.answerA}
                 </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {["A", "B", "C", "D"].map((letter) => (
+                    <div
+                      key={letter}
+                      className={`break-words p-3 rounded-lg border-2 ${
+                        letter === currentQuestion.correctAnswer
+                          ? "bg-green-100 border-green-600"
+                          : "bg-gray-100 border-gray-300"
+                      }`}
+                    >
+                      <span className="font-bold">{letter}:</span>{" "}
+                      {currentQuestion[`answer${letter}` as keyof Question]}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row">
+                {!isSingleAnswerQuestion && (
+                  <div className="flex-1 bg-[#FFE66D] bg-opacity-30 p-3 rounded-lg border-2 border-black">
+                    <p className="text-sm font-bold">Correct Answer</p>
+                    <p className="text-2xl font-bold">
+                      {currentQuestion.correctAnswer}
+                    </p>
+                  </div>
+                )}
                 <div className="flex-1 bg-blue-100 p-3 rounded-lg border-2 border-black">
                   <p className="text-sm font-bold">Points</p>
                   <p className="text-2xl font-bold">{currentQuestion.points}</p>
