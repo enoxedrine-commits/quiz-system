@@ -181,7 +181,7 @@ export default function HostPanel() {
 
   if (!match || !session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] flex items-center justify-center">
+      <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] flex items-center justify-center">
         <div className="text-center">
           <p className="text-2xl font-bold">Loading...</p>
         </div>
@@ -198,19 +198,19 @@ export default function HostPanel() {
   const group2Score = scores.find((s) => s.groupNumber === "2")?.totalPoints || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-6">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-5xl font-bold uppercase memphis-shadow mb-2">
+          <h1 className="mb-2 text-3xl font-bold uppercase memphis-shadow sm:text-5xl">
             Host Control Panel
           </h1>
-          <p className="text-lg text-gray-600">Manage your quiz in real-time</p>
+          <p className="text-base text-gray-600 sm:text-lg">Manage your quiz in real-time</p>
         </div>
 
         {/* Live URL */}
         <div className="memphis-card mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-bold mb-2">Live Display URL:</p>
               <p className="font-mono text-sm break-all">{liveUrl}</p>
@@ -226,18 +226,18 @@ export default function HostPanel() {
         </div>
 
         {/* Status and Scores */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="memphis-card text-center">
             <p className="text-sm font-bold mb-2">Status</p>
-            <p className="text-2xl font-bold uppercase">{session.status}</p>
+            <p className="break-words text-xl font-bold uppercase sm:text-2xl">{session.status}</p>
           </div>
           <div className="memphis-card text-center">
-            <p className="text-sm font-bold mb-2">{session.groupOneName}</p>
-            <p className="text-4xl font-bold text-[#FF6B9D]">{group1Score}</p>
+            <p className="mb-2 break-words text-sm font-bold">{session.groupOneName}</p>
+            <p className="text-3xl font-bold text-[#FF6B9D] sm:text-4xl">{group1Score}</p>
           </div>
           <div className="memphis-card text-center">
-            <p className="text-sm font-bold mb-2">{session.groupTwoName}</p>
-            <p className="text-4xl font-bold text-[#A8E6CF]">{group2Score}</p>
+            <p className="mb-2 break-words text-sm font-bold">{session.groupTwoName}</p>
+            <p className="text-3xl font-bold text-[#A8E6CF] sm:text-4xl">{group2Score}</p>
           </div>
         </div>
 
@@ -245,21 +245,21 @@ export default function HostPanel() {
         {session.status === "completed" ? (
           // Completion Screen
           <div className="memphis-card mb-6">
-            <h2 className="text-3xl font-bold uppercase mb-6 text-center">
+            <h2 className="mb-6 text-center text-2xl font-bold uppercase sm:text-3xl">
               🎉 Quiz Complete!
             </h2>
-            <div className="grid grid-cols-2 gap-6 mb-8">
+            <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div className="bg-[#FF6B9D] bg-opacity-20 p-6 rounded-xl border-2 border-black text-center">
-                <h3 className="text-2xl font-bold mb-2">{session.groupOneName}</h3>
-                <p className="text-5xl font-bold text-[#FF6B9D]">{group1Score}</p>
+                <h3 className="mb-2 break-words text-xl font-bold sm:text-2xl">{session.groupOneName}</h3>
+                <p className="text-4xl font-bold text-[#FF6B9D] sm:text-5xl">{group1Score}</p>
               </div>
               <div className="bg-[#A8E6CF] bg-opacity-20 p-6 rounded-xl border-2 border-black text-center">
-                <h3 className="text-2xl font-bold mb-2">{session.groupTwoName}</h3>
-                <p className="text-5xl font-bold text-[#A8E6CF]">{group2Score}</p>
+                <h3 className="mb-2 break-words text-xl font-bold sm:text-2xl">{session.groupTwoName}</h3>
+                <p className="text-4xl font-bold text-[#A8E6CF] sm:text-5xl">{group2Score}</p>
               </div>
             </div>
             <div className="text-center bg-[#FFE66D] bg-opacity-30 p-6 rounded-xl border-2 border-black">
-              <p className="text-2xl font-bold">
+              <p className="break-words text-xl font-bold sm:text-2xl">
                 {group1Score > group2Score
                   ? `🏆 ${session.groupOneName} wins!`
                   : group2Score > group1Score
@@ -271,7 +271,7 @@ export default function HostPanel() {
         ) : (
           // Quiz Controls
           <div className="memphis-card mb-6">
-            <h2 className="text-2xl font-bold uppercase mb-4">Quiz Controls</h2>
+            <h2 className="text-xl font-bold uppercase mb-4 sm:text-2xl">Quiz Controls</h2>
             <div className="flex gap-4 flex-wrap">
               {session.status === "setup" && (
                 <Button
@@ -347,7 +347,7 @@ export default function HostPanel() {
         {/* Current Question */}
         {currentQuestion && session.status === "in_progress" && (
           <div className="memphis-card">
-            <h2 className="text-2xl font-bold uppercase mb-4">
+            <h2 className="text-xl font-bold uppercase mb-4 sm:text-2xl">
               Question {session.currentQuestionIndex + 1} of {questions.length}
             </h2>
             {isLastQuestion && (
@@ -359,12 +359,12 @@ export default function HostPanel() {
               </div>
             )}
             <div className="bg-white p-4 rounded-lg border-2 border-black mb-4">
-              <p className="text-xl font-bold mb-4">{currentQuestion.questionText}</p>
-              <div className="grid grid-cols-2 gap-3">
+              <p className="mb-4 break-words text-lg font-bold sm:text-xl">{currentQuestion.questionText}</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {["A", "B", "C", "D"].map((letter) => (
                   <div
                     key={letter}
-                    className={`p-3 rounded-lg border-2 ${
+                    className={`break-words p-3 rounded-lg border-2 ${
                       letter === currentQuestion.correctAnswer
                         ? "bg-green-100 border-green-600"
                         : "bg-gray-100 border-gray-300"
@@ -375,7 +375,7 @@ export default function HostPanel() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex gap-4">
+              <div className="mt-4 flex flex-col gap-4 sm:flex-row">
                 <div className="flex-1 bg-[#FFE66D] bg-opacity-30 p-3 rounded-lg border-2 border-black">
                   <p className="text-sm font-bold">Correct Answer</p>
                   <p className="text-2xl font-bold">
@@ -414,7 +414,7 @@ export default function HostPanel() {
                 : currentQuestion?.points ?? 0}
             </p>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Button
                 onClick={() => handleAwardPoints("1")}
                 className="memphis-btn py-6 text-lg bg-[#FF6B9D] text-white hover:bg-[#FF5A8C]"

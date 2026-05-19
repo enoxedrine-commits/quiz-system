@@ -62,11 +62,11 @@ export default function GroupSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-6 flex items-center justify-center">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6 flex items-center justify-center">
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-5xl font-bold uppercase memphis-shadow mb-2">
+          <h1 className="mb-2 text-4xl font-bold uppercase memphis-shadow sm:text-5xl">
             Quiz Setup
           </h1>
           <p className="text-lg text-gray-600">Enter your team names</p>

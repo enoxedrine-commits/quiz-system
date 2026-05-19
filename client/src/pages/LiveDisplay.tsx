@@ -99,7 +99,7 @@ export default function LiveDisplay() {
 
   if (!match || !session) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] flex items-center justify-center">
+      <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] flex items-center justify-center">
         <div className="text-center">
           <p className="text-2xl font-bold">Loading...</p>
         </div>
@@ -111,17 +111,17 @@ export default function LiveDisplay() {
   const group2Score = scores.find((s) => s.groupNumber === "2")?.totalPoints || 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-8">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6 lg:p-8">
       {/* Scoreboard */}
-      <div className="grid grid-cols-2 gap-6 mb-8 max-w-2xl mx-auto">
+      <div className="mx-auto mb-6 grid max-w-2xl grid-cols-1 gap-4 sm:mb-8 sm:grid-cols-2 sm:gap-6">
         <div className="memphis-card text-center">
-          <h2 className="text-2xl font-bold uppercase mb-2">{session.groupOneName}</h2>
-          <div className="text-6xl font-bold text-[#FF6B9D]">{group1Score}</div>
+          <h2 className="mb-2 break-words text-lg font-bold uppercase sm:text-xl">{session.groupOneName}</h2>
+          <div className="text-4xl font-bold text-[#FF6B9D] sm:text-5xl lg:text-6xl">{group1Score}</div>
           <p className="text-sm text-gray-600 mt-2">Points</p>
         </div>
         <div className="memphis-card text-center">
-          <h2 className="text-2xl font-bold uppercase mb-2">{session.groupTwoName}</h2>
-          <div className="text-6xl font-bold text-[#A8E6CF]">{group2Score}</div>
+          <h2 className="mb-2 break-words text-lg font-bold uppercase sm:text-xl">{session.groupTwoName}</h2>
+          <div className="text-4xl font-bold text-[#A8E6CF] sm:text-5xl lg:text-6xl">{group2Score}</div>
           <p className="text-sm text-gray-600 mt-2">Points</p>
         </div>
       </div>
@@ -129,32 +129,32 @@ export default function LiveDisplay() {
       {/* Main Content - Check status first */}
       {session.status === "completed" ? (
         // Quiz Complete Screen
-        <div className="memphis-card max-w-2xl mx-auto text-center py-12">
-          <h1 className="text-5xl font-bold uppercase memphis-shadow mb-4">
+        <div className="memphis-card max-w-2xl mx-auto text-center py-8 sm:py-12">
+          <h1 className="mb-4 text-3xl font-bold uppercase memphis-shadow sm:text-5xl">
             🎉 Quiz Complete!
           </h1>
-          <div className="text-2xl font-bold mb-8">
+          <div className="mb-8 text-xl font-bold sm:text-2xl">
             {group1Score > group2Score
               ? `🏆 ${session.groupOneName} wins!`
               : group2Score > group1Score
               ? `🏆 ${session.groupTwoName} wins!`
               : "🤝 It's a tie!"}
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <p className="font-bold">{session.groupOneName}</p>
+              <p className="break-words font-bold">{session.groupOneName}</p>
               <p className="text-4xl font-bold text-[#FF6B9D]">{group1Score}</p>
             </div>
             <div>
-              <p className="font-bold">{session.groupTwoName}</p>
+              <p className="break-words font-bold">{session.groupTwoName}</p>
               <p className="text-4xl font-bold text-[#A8E6CF]">{group2Score}</p>
             </div>
           </div>
         </div>
       ) : session.status === "setup" ? (
         // Waiting for Quiz to Start
-        <div className="memphis-card max-w-2xl mx-auto text-center py-12">
-          <p className="text-2xl font-bold">⏳ Waiting for quiz to start...</p>
+        <div className="memphis-card max-w-2xl mx-auto text-center py-8 sm:py-12">
+          <p className="text-xl font-bold sm:text-2xl">⏳ Waiting for quiz to start...</p>
         </div>
       ) : currentQuestion ? (
         // Question Display
@@ -165,7 +165,7 @@ export default function LiveDisplay() {
               <p className="text-sm text-gray-600 font-bold mb-2">
                 Question {session.currentQuestionIndex + 1} of {questions.length}
               </p>
-              <h1 className="text-4xl md:text-5xl font-bold uppercase memphis-shadow">
+              <h1 className="break-words text-2xl font-bold uppercase memphis-shadow sm:text-4xl md:text-5xl">
                 {currentQuestion.questionText}
               </h1>
             </div>
@@ -174,7 +174,7 @@ export default function LiveDisplay() {
             <div className="flex justify-center mb-8">
               <div className="text-center">
                 <div
-                  className={`w-32 h-32 rounded-full flex items-center justify-center text-6xl font-bold border-4 ${
+                  className={`flex h-24 w-24 items-center justify-center rounded-full border-4 text-4xl font-bold sm:h-32 sm:w-32 sm:text-6xl ${
                     session.answerRevealed
                       ? "bg-green-100 border-green-500 text-green-600"
                       : session.questionPassed
@@ -209,7 +209,7 @@ export default function LiveDisplay() {
             </div>
 
             {/* Answers */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {["A", "B", "C", "D"].map((letter) => {
                 const answerText =
                   currentQuestion[`answer${letter}` as keyof Question];
@@ -220,13 +220,14 @@ export default function LiveDisplay() {
                 return (
                   <div
                     key={letter}
-                    className={`p-6 rounded-xl border-4 font-bold text-lg uppercase transition-all ${
+                    className={`break-words rounded-xl border-4 p-4 text-base font-bold uppercase transition-all sm:p-6 sm:text-lg ${
                       shouldHighlight
                         ? "bg-green-300 border-green-600 scale-105 shadow-lg"
                         : "bg-white border-black"
                     }`}
                   >
-                    <span className="font-black text-2xl">{letter}.</span> {answerText}
+                    <span className="font-black text-xl sm:text-2xl">{letter}.</span>{" "}
+                    {answerText}
                   </div>
                 );
               })}
@@ -243,8 +244,8 @@ export default function LiveDisplay() {
         </div>
       ) : (
         // Loading or No Question
-        <div className="memphis-card max-w-2xl mx-auto text-center py-12">
-          <p className="text-2xl font-bold">Loading question...</p>
+        <div className="memphis-card max-w-2xl mx-auto text-center py-8 sm:py-12">
+          <p className="text-xl font-bold sm:text-2xl">Loading question...</p>
         </div>
       )}
     </div>

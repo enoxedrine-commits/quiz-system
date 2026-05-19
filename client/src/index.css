@@ -123,6 +123,13 @@
 }
 
 @layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+    overflow-y: auto;
+  }
+
   * {
     @apply border-border outline-ring/50;
   }

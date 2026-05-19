@@ -10,7 +10,7 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] flex items-center justify-center">
+      <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] flex items-center justify-center">
         <Loader2 className="animate-spin h-8 w-8" />
       </div>
     );
@@ -18,9 +18,9 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-6 flex items-center justify-center">
+      <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6 flex items-center justify-center">
         <div className="max-w-md w-full text-center">
-          <h1 className="text-5xl font-bold uppercase memphis-shadow mb-4">
+          <h1 className="mb-4 text-4xl font-bold uppercase memphis-shadow sm:text-5xl">
             Quiz Master
           </h1>
           <p className="text-lg text-gray-600 mb-8">
@@ -38,12 +38,12 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-6">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-start mb-12">
+        <div className="mb-8 flex flex-col gap-4 sm:mb-12 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <h1 className="text-5xl font-bold uppercase memphis-shadow mb-2">
+            <h1 className="mb-2 text-4xl font-bold uppercase memphis-shadow sm:text-5xl">
               Quiz Master
             </h1>
             <p className="text-lg text-gray-600">
@@ -53,7 +53,7 @@ export default function Home() {
           <Button
             onClick={() => logout()}
             variant="outline"
-            className="border-2 border-black font-bold"
+            className="w-full border-2 border-black font-bold sm:w-auto"
           >
             Sign Out
           </Button>
@@ -69,7 +69,7 @@ export default function Home() {
             >
               <div>
                 <div className="text-5xl mb-4">📝</div>
-                <h2 className="text-3xl font-bold uppercase mb-2 group-hover:text-[#FF6B9D] transition-colors">
+                <h2 className="mb-2 text-2xl font-bold uppercase transition-colors group-hover:text-[#FF6B9D] sm:text-3xl">
                   Manage Questions
                 </h2>
                 <p className="text-gray-600">
@@ -90,7 +90,7 @@ export default function Home() {
             >
               <div>
                 <div className="text-5xl mb-4">🎮</div>
-                <h2 className="text-3xl font-bold uppercase mb-2 group-hover:text-[#FF6B9D] transition-colors">
+                <h2 className="mb-2 text-2xl font-bold uppercase transition-colors group-hover:text-[#FF6B9D] sm:text-3xl">
                   Start Quiz
                 </h2>
                 <p className="text-gray-600">
@@ -106,7 +106,7 @@ export default function Home() {
 
         {/* Features */}
         <div className="memphis-card">
-          <h2 className="text-3xl font-bold uppercase mb-6">Features</h2>
+          <h2 className="mb-6 text-2xl font-bold uppercase sm:text-3xl">Features</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="flex gap-3">
               <div className="text-3xl">⏱️</div>

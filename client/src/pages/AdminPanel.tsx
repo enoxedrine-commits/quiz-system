@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Edit2, Plus, Upload } from "lucide-react";
+import { ArrowLeft, Trash2, Edit2, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 type Question = {
@@ -143,6 +144,7 @@ function parseQuestionsCsv(csvText: string) {
 }
 
 export default function AdminPanel() {
+  const [, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [passedQuestionPoints, setPassedQuestionPoints] = useState(5);
@@ -314,19 +316,31 @@ export default function AdminPanel() {
   };
 
   return (
-    <div className="h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-6">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#FFF0E6] to-[#FFE6D5] p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold uppercase memphis-shadow mb-2">
-            Quiz Questions
-          </h1>
-          <p className="text-lg text-gray-600">Manage your quiz questions here</p>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="mb-2 text-3xl font-bold uppercase memphis-shadow sm:text-5xl">
+              Quiz Questions
+            </h1>
+            <p className="text-base text-gray-600 sm:text-lg">
+              Manage your quiz questions here
+            </p>
+          </div>
+          <Button
+            onClick={() => setLocation("/")}
+            variant="outline"
+            className="w-full border-2 border-black font-bold sm:w-auto"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
         </div>
 
         {/* Question Bank */}
         <div className="memphis-card mb-6">
-          <h2 className="text-2xl font-bold uppercase mb-4">Question Bank</h2>
+          <h2 className="text-xl font-bold uppercase mb-4 sm:text-2xl">Question Bank</h2>
           <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
             <div>
               <label className="block text-sm font-bold mb-2">Active Bank</label>
@@ -366,7 +380,7 @@ export default function AdminPanel() {
 
         {/* Settings */}
         <div className="memphis-card mb-6">
-          <h2 className="text-2xl font-bold uppercase mb-4">Admin Settings</h2>
+          <h2 className="text-xl font-bold uppercase mb-4 sm:text-2xl">Admin Settings</h2>
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
             <div className="max-w-xs">
               <label className="block text-sm font-bold mb-2">
@@ -434,12 +448,12 @@ export default function AdminPanel() {
                 key={question.id}
                 className="memphis-card hover:shadow-lg transition-all"
               >
-                <div className="flex justify-between items-start mb-4">
+                <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold uppercase mb-3">
+                    <h3 className="mb-3 break-words text-lg font-bold uppercase sm:text-xl">
                       {question.questionText}
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="bg-[#A8E6CF] bg-opacity-30 p-3 rounded-lg">
                         <span className="font-bold">A:</span> {question.answerA}
                       </div>
@@ -453,7 +467,7 @@ export default function AdminPanel() {
                         <span className="font-bold">D:</span> {question.answerD}
                       </div>
                     </div>
-                    <div className="flex gap-4 text-sm">
+                    <div className="flex flex-col gap-3 text-sm sm:flex-row sm:gap-4">
                       <div>
                         <span className="font-bold">Correct Answer:</span>{" "}
                         <span className="bg-green-200 px-2 py-1 rounded font-bold">
@@ -468,7 +482,7 @@ export default function AdminPanel() {
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 ml-4">
+                  <div className="flex gap-2 sm:ml-4">
                     <Button
                       variant="outline"
                       size="sm"
@@ -515,7 +529,7 @@ export default function AdminPanel() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {["A", "B", "C", "D"].map((letter) => (
                 <div key={letter}>
                   <label className="block text-sm font-bold mb-2">Answer {letter}</label>
@@ -534,7 +548,7 @@ export default function AdminPanel() {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-bold mb-2">Correct Answer</label>
                 <Select
@@ -576,7 +590,7 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            <div className="flex gap-3 justify-end pt-4">
+            <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
               <Button
                 variant="outline"
                 onClick={() => setIsOpen(false)}
